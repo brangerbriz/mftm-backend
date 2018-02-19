@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Example Frontend</title>
+</head>
+<body>
+<script src="/socket.io/socket.io.js"></script>
+<script type="text/javascript">
+	const socket = io.connect('http://localhost:8989')
+
+  	socket.on('received-tx', function (data) {
+    	console.log('received-tx:', data)
+  	})  
+
+  	socket.on('received-block', function (data) {
+    	console.log('received-block', data)
+  	})   
+ 
+  	socket.on('peer-info', function (data) {
+    	console.log('peer-info:')
+    	data.forEach(peer => console.log(peer.addr))
+  	})  
+  	   
+</script>
+</body>
+</html>

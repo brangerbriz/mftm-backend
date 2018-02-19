@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Blockchain Messages Review</title>
+	<meta charset="utf-8">
+	<style type="text/css">
+
+		body {
+			font-family: 'Work Sans', 'Ubuntu', 'Sans Serif';
+			font-weight: 400;
+			width: 800px;
+			margin: auto;
+			margin-top: 25px;
+
+
+		}
+
+		h2 {
+			text-align: center;
+			font-weight: 400;
+		}
+
+		#query-form, #results {
+			text-align: center;
+		}
+
+		#data {
+			width: 100%;
+			height: 250px;
+		}
+
+		select, textarea, input {
+			margin-bottom: 15px;
+		}
+
+		#results {
+			text-align: left;
+		}
+
+		#next-button, #prev-button {
+			float: right;
+			margin-top: 10px;
+			margin-bottom: 10px;
+		}
+
+		#prev-button {
+			float: left;
+		}
+
+		.result {
+			padding-top: 10px;
+			border-bottom: 1px solid black;
+			cursor: pointer;
+		}
+
+		.result-info, .line-item {
+			margin-top: 10px;
+			margin-bottom: 10px;
+			color: gray;
+		}
+
+		.result-info textarea {
+			width: 100%;
+		}
+
+	</style>
+	<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vue"></script>
+</head>
+<body>
+<dir id="app">
+<h2>Query</h2>
+<form id="query-form" method="GET" action="">
+	
+	Table: 
+	<select v-model="filter.table" name="query-table"> 
+	  	<option value="ascii_coinbase_messages">ASCII Coinbase Messages</option> 
+	  	<option value="utf8_address_messages">UTF-8 Address Messages</option>
+	</select><br>
+
+	Reviewed: 
+	<input id="query-reviewed-all" type="radio" name="query-reviewed" v-model="filter.reviewed" v-bind:value="undefined" value="null">
+	<label for="query-reviewed-all">All</label>
+	<input id="query-reviewed-no" type="radio" name="query-reviewed" v-model="filter.reviewed" v-bind:value="false">
+	<label for="query-reviewed-no">No</label>
+	<input id="query-reviewed-yes" type="radio" name="query-reviewed" v-model="filter.reviewed" v-bind:value="true">
+	<label for="query-reviewed-yes">Yes</label>
+	<br>
+
+	Valid: 
+	<input id="query-valid-all" type="radio" name="query-valid" v-model="filter.valid" v-bind:value="undefined" selected>
+	<label for="query-valid-all">All</label>
+	<input id="query-valid-no" type="radio" name="query-valid" v-model="filter.valid" v-bind:value="false">
+	<label for="query-valid-no">No</label>
+	<input id="query-valid-yes" type="radio" name="query-valid" v-model="filter.valid" v-bind:value="true">
+	<label for="query-valid-yes">Yes</label>
+	<br>
+
+	Bookmarked: 
+	<input id="query-bookmarked-all" type="radio" name="query-bookmarked" v-model="filter.bookmarked" value="undefined" selected>
+	<label for="query-bookmarked-all">All</label>
+	<input id="query-bookmarked-no" type="radio" name="query-bookmarked" v-model="filter.bookmarked" value="false">
+	<label for="query-bookmarked-no">No</label>
+	<input id="query-bookmarked-yes" type="radio" name="query-bookmarked" v-model="filter.bookmarked" value="true">
+	<label for="query-bookmarked-yes">Yes</label>
+	<br>
+
+	Annotated: 
+	<input id="query-annotated-all" type="radio" name="query-annotated" v-model="filter.annotated" value="undefined" selected>
+	<label for="query-annotated-all">All</label>
+	<input id="query-annotated-no" type="radio" name="query-annotated" v-model="filter.annotated" value="false">
+	<label for="query-annotated-no">No</label>
+	<input id="query-annotated-yes" type="radio" name="query-annotated" v-model="filter.annotated" value="true">
+	<label for="query-annotated-yes">Yes</label>
+	<br>
+
+	TX: <input type="text" v-model="filter.transaction">
+	<br>
+
+	Unique Messages: <input type="checkbox" v-model="filter.unique">
+	<br>
+	<br>
+
+	Search: <input type="text" v-model="filter.search">
+	<br>
+
+	Offset: <input type="number" v-model="filter.offset">
+
+	<br>
+	<button id="filter-button" type="button">Search</button>
+	<br>
+	<br>
+	Autoreview: <input type="checkbox" v-model="autoreview"></input>
+
+</form>
+
+<div id="results">
+	<div v-for="result in results" class="result">
+		<pre class="data" v-on:click="result.valid = !result.valid;">{{ result.data }}</pre>
+		<div class="result-info">
+			<div>
+				valid: <input type="checkbox" v-model="result.valid" name='valid' @change="updateRecord('valid', result)"> &nbsp;
+				bookmarked: <input type="checkbox" v-model="result.bookmarked" @change="updateRecord('bookmarked', result)"> &nbsp;
+				reviewed: <input type="checkbox" v-model="result.reviewed" @change="updateRecord('reviewed', result)"> &nbsp;
+				<span v-if="typeof result.format !== 'undefined'">format: <input type="checkbox" v-model="result.format" @change="formatUTF8(result); updateRecord('format', result);"> &nbsp;</span>
+
+				<span v-on:click="result.expanded = !result.expanded">...</span>
+			</div>
+			<div v-show="result.expanded">
+				<div class="line-item">tx: <a :href='"https://blockchain.info/tx/" + result.transaction_hash'> {{ result.transaction_hash }} </a></div>
+				<div class="line-item">tags: <input type="text" v-model='result.tags' @change="updateRecord('tags', result)"></div>
+				<textarea v-model="result.annotation" @change="updateRecord('annotation', result)"></textarea>
+			</div>
+		</div>
+	</div>
+</div>
+
+<button id="next-button" type="button">Next</button>
+<button id="prev-button" type="button">Previous</button>
+
+</dir>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/qs/6.5.1/qs.js"></script>
+<script type="text/javascript" src="main.js"></script>
+</body>
+</html>
