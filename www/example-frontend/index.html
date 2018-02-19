@@ -6,7 +6,7 @@
 <body>
 <script src="/socket.io/socket.io.js"></script>
 <script type="text/javascript">
-	const socket = io.connect('http://localhost:8989')
+	const socket = io.connect(`http://${location.host}`)
 
   	socket.on('received-tx', function (data) {
     	console.log('received-tx:', data)
@@ -20,7 +20,21 @@
     	console.log('peer-info:')
     	data.forEach(peer => console.log(peer.addr))
   	})  
+
+  	socket.on('block-count', function (count) {
+    	console.log('block-count:', count)
+  	}) 
   	   
+  	// fetch a block hash using a block height index
+  	fetch(`http://${location.host}/api/block?index=500000`)
+  	.then(res => res.json())
+  	.then(data => {
+		console.log(`This is how you get a block from using an index:`)
+		console.log(data)
+  	}).catch(err=>{
+  		console.error(err)
+  	})
+
 </script>
 </body>
 </html>
