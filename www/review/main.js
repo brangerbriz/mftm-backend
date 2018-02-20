@@ -5,6 +5,7 @@ let filter = {
 	bookmarked: undefined,
 	unique: true,
 	transaction: undefined,
+	nsfw: undefined,
 	annotated: undefined,
 	search: undefined,
 	tags: [],
@@ -20,6 +21,7 @@ let filter = {
 // 	tags: ['blah', 'blue', 'blarb'],
 // 	bookmarked: false,
 // 	annotated: "here yee lies the king",
+//  nsfw: false
 // 	reviewed: null
 // }]
 
@@ -99,20 +101,24 @@ function formatUTF8(result) {
 
 function search() {
 
-	if (app.filter.transaction == '') app.filter.transaction = undefined
-	if (app.filter.search == '') app.filter.search = undefined
+	// make a copy, because we are going to mutate some of the data and 
+	// we don't want that to show up in the view
+	let filter = JSON.parse(JSON.stringify(app.filter))
 
-	if (app.filter.search && app.filter.table == 'utf8_address_messages') {
-		app.filter.search = encodeHexString(app.filter.search)
+	if (filter.transaction == '') filter.transaction = undefined
+	if (filter.search == '') filter.search = undefined
+
+	if (filter.search && filter.table.indexOf('utf8') > -1) {
+		filter.search = encodeHexString(filter.search)
 	}
 
-	const url = `${window.location.protocol}//${window.location.host}/api/review?${Qs.stringify(app.filter)}`
+	const url = `${window.location.protocol}//${window.location.host}/api/review?${Qs.stringify(filter)}`
 	fetch(url, { method: 'get' })
 	.then(res => res.json())
 	.then(json => {
 		json.forEach(obj => {
 			obj.expanded = false
-			if (app.filter.table == 'utf8_address_messages') {
+			if (filter.table.indexOf('utf8') > -1) {
 				obj.data = decodeHexString(obj.data)
 				if (obj.format) {
 					formatUTF8(obj)

@@ -20,12 +20,27 @@ const io         = socketio(httpServer)
 
 io.on('connection', function (socket) {
   	console.log('[+] socket connection established')
+  	
+  	// send the block count
   	rpcClient.getBlockCount((err, count) => {
+  		
   		if (err) {
   			console.error(err)
   		} else {
   			socket.emit('block-count', count)
   		}
+
+		dbPool.getConnection((err, connection) => {
+			// all messages, including nsfw
+			utils.getBlocklist(null, null, connection, (err, blocklist) => {
+				io.emit('message-blocklist', blocklist)
+			})
+
+			// bookmarked messages, including nsfw
+			utils.getBlocklist(null, true, connection, (err, blocklist) => {
+				io.emit('bookmarked-blocklist', blocklist)
+			})
+		})
   	})
 })
 
@@ -59,8 +74,18 @@ app.get('/api/block', (req, res) => {
 	})
 })
 
+app.get('/api/block/messages', (req, res) => {
+	const index = parseInt(req.query.index)
+	dbPool.getConnection((err, connection) => {
+		utils.getBlockMessages(index, connection, (err, messages) => {
+			res.json(messages)
+		})
+	})
+})
+
 app.get('/api/review', (req, res) => {
 	dbPool.getConnection((err, connection) => {
+		req.query.limit = 5 // set the limit here
 		const query = utils.buildSQLSelectQuery(req.query, connection)	
 		console.log(query)
 		connection.query(query, (error, results, fields) => {
@@ -110,7 +135,7 @@ zmqSock.subscribe('hashblock')
 zmqSock.subscribe('') // receive all messages 
 
 zmqSock.on('message', function(topic, message) {
-	if (topic.toString() != 'hashtx') console.log(topic.toString(), message.length)
+	// if (topic.toString() != 'hashtx') console.log(topic.toString(), message.length)
 	if (topic == 'hashtx') {
 
 		// rpcClient.getTransaction(message.toString('hex'), (err, tx) => {

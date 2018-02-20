@@ -75,6 +75,7 @@
 	<select v-model="filter.table" name="query-table"> 
 	  	<option value="ascii_coinbase_messages">ASCII Coinbase Messages</option> 
 	  	<option value="utf8_address_messages">UTF-8 Address Messages</option>
+	  	<option value="op_return_utf8_address_messages">OP_RETURN UTF-8 Address Messages</option>
 	</select><br>
 
 	Reviewed: 
@@ -113,6 +114,15 @@
 	<label for="query-annotated-yes">Yes</label>
 	<br>
 
+	NSFW: 
+	<input id="query-nsfw-all" type="radio" name="query-nsfw" v-model="filter.nsfw" value="undefined" selected>
+	<label for="query-nsfw-all">All</label>
+	<input id="query-nsfw-no" type="radio" name="query-nsfw" v-model="filter.nsfw" value="false">
+	<label for="query-nsfw-no">No</label>
+	<input id="query-nsfw-yes" type="radio" name="query-nsfw" v-model="filter.nsfw" value="true">
+	<label for="query-nsfw-yes">Yes</label>
+	<br>
+
 	TX: <input type="text" v-model="filter.transaction">
 	<br>
 
@@ -138,15 +148,19 @@
 		<pre class="data" v-on:click="result.valid = !result.valid;">{{ result.data }}</pre>
 		<div class="result-info">
 			<div>
-				valid: <input type="checkbox" v-model="result.valid" name='valid' @change="updateRecord('valid', result)"> &nbsp;
+				{{ moment(result.block_timestamp).format('MMMM Do YYYY, h:mm:ss A') }} &nbsp; | &nbsp;
+
+				valid: <input type="checkbox" v-model="result.valid" name='valid' @change="updateRecord('valid', result)"> &nbsp; 
 				bookmarked: <input type="checkbox" v-model="result.bookmarked" @change="updateRecord('bookmarked', result)"> &nbsp;
+				nsfw: <input type="checkbox" v-model="result.nsfw" @change="updateRecord('nsfw', result)"> &nbsp;
 				reviewed: <input type="checkbox" v-model="result.reviewed" @change="updateRecord('reviewed', result)"> &nbsp;
 				<span v-if="typeof result.format !== 'undefined'">format: <input type="checkbox" v-model="result.format" @change="formatUTF8(result); updateRecord('format', result);"> &nbsp;</span>
 
 				<span v-on:click="result.expanded = !result.expanded">...</span>
 			</div>
 			<div v-show="result.expanded">
-				<div class="line-item">tx: <a :href='"https://blockchain.info/tx/" + result.transaction_hash'> {{ result.transaction_hash }} </a></div>
+				<div class="line-item">block: <a :href='"https://blockchain.info/block-height/" + result.block_height' target='_blank'>{{ result.block_height }} </a></div>
+				<div class="line-item">tx: <a :href='"https://blockchain.info/tx/" + result.transaction_hash' target='_blank'> {{ result.transaction_hash }} </a></div>
 				<div class="line-item">tags: <input type="text" v-model='result.tags' @change="updateRecord('tags', result)"></div>
 				<textarea v-model="result.annotation" @change="updateRecord('annotation', result)"></textarea>
 			</div>
@@ -159,6 +173,7 @@
 
 </dir>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/qs/6.5.1/qs.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
 <script type="text/javascript" src="main.js"></script>
 </body>
 </html>
