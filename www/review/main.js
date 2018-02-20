@@ -40,7 +40,6 @@ document.getElementById('next-button').onclick = () => {
 
 	if (app.autoreview) {
 		app.results.forEach((result) => {
-			console.log('here')
 			result.reviewed = true
 			updateRecord('reviewed', result)
 		})
@@ -87,7 +86,6 @@ function encodeHexString(string) {
 
 function formatUTF8(result) {
 
-	console.log(result)
 	if (result.data.length < 20) return
 
 	if (result.format) {
@@ -126,7 +124,6 @@ function search() {
 			}
 		})
 		app.results = json.slice(0, 100)
-		console.log(app.results)
 	})
 }
 
