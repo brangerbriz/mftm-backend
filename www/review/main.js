@@ -36,7 +36,7 @@ document.getElementById('filter-button').onclick = search
 
 document.getElementById('next-button').onclick = () => {
 	
-	app.filter.offset += 5
+	app.filter.offset = parseInt(app.filter.offset) + 5
 
 	if (app.autoreview) {
 		app.results.forEach((result) => {
@@ -50,7 +50,7 @@ document.getElementById('next-button').onclick = () => {
 }
 
 document.getElementById('prev-button').onclick = () => {
-	filter.offset = Math.max(0, filter.offset - 5)
+	app.filter.offset = Math.max(0, parseInt(app.filter.offset) - 5)
 	search()
 	window.scrollTo(0, 0)
 }
@@ -68,7 +68,7 @@ document.onload = search()
 function decodeHexString(hexString) {
 	
 	let decoded = ''
-	for (let i = 0; i < hexString.length - 2; i += 2) {
+	for (let i = 0; i < hexString.length; i += 2) {
 		var decimalValue = parseInt(hexString.slice(i, i + 2), 16); // Base 16 or hexadecimal
 		decoded += String.fromCharCode(decimalValue);
 	}
@@ -86,14 +86,14 @@ function encodeHexString(string) {
 
 function formatUTF8(result) {
 
-	if (result.data.length < 20) return
+	if (result.displayData.length < 20) return
 
 	if (result.format) {
 		let formatted = ''
-		for (let i = 0; i < result.data.length - 20; i += 20) {
-			formatted += result.data.slice(i, i + 20) + '\n'
+		for (let i = 0; i < result.displayData.length - 20; i += 20) {
+			formatted += result.displayData.slice(i, i + 20) + '\n'
 		}
-		result.data = formatted
+		result.displayData = formatted
 	}
 }
 
@@ -113,15 +113,16 @@ function search() {
 	filter.tags = app.filter.tags.split(',')
 								 .map(x => x.trim())
 								 .filter(x => x != '')
-								 
+
 	const url = `${window.location.protocol}//${window.location.host}/api/review?${Qs.stringify(filter)}`
 	fetch(url, { method: 'get' })
 	.then(res => res.json())
 	.then(json => {
 		json.forEach(obj => {
 			obj.expanded = false
+			obj.displayData = obj.data
 			if (filter.table.indexOf('utf8') > -1) {
-				obj.data = decodeHexString(obj.data)
+				obj.displayData = decodeHexString(obj.displayData)
 				if (obj.format) {
 					formatUTF8(obj)
 				}
@@ -156,7 +157,7 @@ function updateRecord(prop, result) {
 
 	const body = {
 		table: filter.table,
-		id: result.id,
+		data: result.data,
 		update: prop,
 		value: value
 	}

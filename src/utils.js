@@ -171,14 +171,14 @@ function buildSQLUpdateQuery(params, connection) {
 
 	let query = `UPDATE ${connection.escapeId(params.table)} `
 	query += `SET ${connection.escapeId(params.update)} = ${connection.escape(updateVal)} `
-	query += `WHERE \`id\` = ${connection.escape(params.id)} LIMIT 1;`
+	query += `WHERE \`data\` = ${connection.escape(params.data)};`
 	return query
 }
 
 function _decodeHexString(hexString) {
 	
 	let decoded = ''
-	for (let i = 0; i < hexString.length - 2; i += 2) {
+	for (let i = 0; i < hexString.length; i += 2) {
 		var decimalValue = parseInt(hexString.slice(i, i + 2), 16); // Base 16 or hexadecimal
 		decoded += String.fromCharCode(decimalValue);
 	}
