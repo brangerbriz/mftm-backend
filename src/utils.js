@@ -1,3 +1,8 @@
+// get an array of all of the messages from a certain block (using it's index)
+// from the mysql database. searches three tables:
+//     - ascii_coinbase_messages
+//     - utf_address_messages
+//     - op_return_utf8_messages
 function getBlockMessages(index, connection, callback) {
 	
 	let returnedQueries = 0
@@ -24,6 +29,8 @@ function getBlockMessages(index, connection, callback) {
 	}
 }
 
+// transform mysql database results into a format 
+// more friendly for the front-end to receive
 function _processMessageResults(results, type) {
 	return results.map(result=> {
 		let data = (type.indexOf('utf8') > -1) ? _decodeHexString(result.data) : result.data
@@ -43,6 +50,8 @@ function _processMessageResults(results, type) {
 	})
 }
 
+// get a list of block height indicies that contain address messages. 
+// nsfw and bookmarked params act as a filter. nsfw actually == !nsfw (whoops!)
 function getBlocklist(nsfw, bookmarked, connection, callback) {
 	
 	let returnedQueries = 0
@@ -60,6 +69,7 @@ function getBlocklist(nsfw, bookmarked, connection, callback) {
 	}
 }
 
+// internal method to extract blocklist from a single table
 function _getBlocklist(nsfw, bookmarked, table, connection, callback) {
 	
 	let query = `SELECT DISTINCT block_height FROM ${table} WHERE valid = 1 `
@@ -81,7 +91,7 @@ function _getBlocklist(nsfw, bookmarked, table, connection, callback) {
 	})
 }
 
-
+// build a semi-complex mysql query from a params object (usually GET url params)
 function buildSQLSelectQuery(params, connection) {
 
 	const supportedTables = ['ascii_coinbase_messages', 
@@ -163,6 +173,7 @@ function buildSQLSelectQuery(params, connection) {
 	return query
 }
 
+// build a simple mysql UPDATE query from a limited params object
 function buildSQLUpdateQuery(params, connection) {
 	
 	let updateVal = params.value
@@ -175,6 +186,9 @@ function buildSQLUpdateQuery(params, connection) {
 	return query
 }
 
+// take a hex string and transform it into UTF-8. Used for `data` columns from
+// utf_address_messages and op_return_utf8_address_messages tables which store
+// data as hex strings.
 function _decodeHexString(hexString) {
 	
 	let decoded = ''
@@ -185,6 +199,12 @@ function _decodeHexString(hexString) {
 	return decoded	
 }
 
+// some people format the data they save in the blockchain neatly into 20 byte
+// sections to fit in the size of each address. If they do that, and we concatenate
+// all addresses together, we essentially "unformat" their implied "\n" characters.
+// this function returns a new string with "\n" characters injected every 20 bytes
+// of the input data to re-format messages to be how the author would have originally
+// intended them
 function _formatUTF8(data) {
 	if (data.length < 20) return
 	let formatted = ''
