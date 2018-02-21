@@ -19,7 +19,7 @@ const httpServer = http.Server(app)
 const io         = socketio(httpServer)
 
 io.on('connection', function (socket) {
-  	console.log('[socket.io] socket connection established')
+  	console.log('[socio] socket connection established')
   	
   	// send the current block height on socket connection
   	rpcClient.getBlockCount((err, count) => {
@@ -61,7 +61,7 @@ app.use(express.static('www'))
 // essentially proxy a request to that API exposed at /api/block
 // e.g. http://localhost:8989/api/block?index=0 gives the genesis block
 app.get('/api/block', (req, res) => {
-	console.log(`[http] GET ${req.url}`)
+	console.log(`[http]  GET ${req.url}`)
 	const index = parseInt(req.query.index)
 	// given the block index, use the bitcoind JSON RPC api to get the
 	// corresponding block hash
@@ -97,7 +97,7 @@ app.get('/api/block', (req, res) => {
 // e.g. http://localhost:8989/api/block/messages?index=0
 // could probably use some error handling in here, but ヽ(´ー｀)┌
 app.get('/api/block/messages', (req, res) => {
-	console.log(`[http] GET ${req.url}`)
+	console.log(`[http]  GET ${req.url}`)
 	const index = parseInt(req.query.index)
 	dbPool.getConnection((err, connection) => {
 		utils.getBlockMessages(index, connection, (err, messages) => {
@@ -109,7 +109,7 @@ app.get('/api/block/messages', (req, res) => {
 
 // the search api used by the www/review CMS
 app.get('/api/review', (req, res) => {
-	console.log(`[http] GET ${req.url}`)
+	console.log(`[http]  GET ${req.url}`)
 	dbPool.getConnection((err, connection) => {
 		req.query.limit = 5 // set the limit here
 		const query = utils.buildSQLSelectQuery(req.query, connection)	
@@ -130,7 +130,7 @@ app.get('/api/review', (req, res) => {
 // we use this endpoint to update the mysql database
 app.use('/api/review', bodyParser.json())
 app.post('/api/review', (req, res) => {
-	console.log(`[http] POST ${req.body}`)
+	console.log(`[http]  POST ${req.body}`)
 	dbPool.getConnection((err, connection) => {
 		const query = utils.buildSQLUpdateQuery(req.body, connection)	
 		console.log(`[mysql] ${query}`)
@@ -149,7 +149,7 @@ app.post('/api/review', (req, res) => {
 
 // start the server
 httpServer.listen(config.port, () => {
-	console.log(`[http] server listening at http://localhost:${config.port}`)
+	console.log(`[http]  server listening at http://localhost:${config.port}`)
 })
 
 //ZeroMQ bitcoind communication ------------------------------------------------
@@ -164,16 +164,36 @@ zmqSock.subscribe('') // receive all messages
 
 zmqSock.on('message', function(topic, message) {
 	// if (topic.toString() != 'hashtx') console.log(topic.toString(), message.length)
-	if (topic == 'hashtx') {
+	if (topic == 'rawtx') {
 
-		// rpcClient.getTransaction(message.toString('hex'), (err, tx) => {
-		// 	console.log(err)
-		// 	console.log(tx)
-		// })
-	
-		io.emit('received-tx', message.toString('hex'))
+		rpcClient.decodeRawTransaction(message.toString('hex'), (err, tx) => {
+			io.emit('received-tx', tx)
+		})
+		
 	} else if (topic == 'hashblock') {
-		io.emit('received-block', message.toString('hex'))
+		let blockHash = message.toString('hex')
+		console.log(`[zmq]   recieved a new block ${message.toString('hex')}`)
+		const url = `http://localhost:${config.bitcoinRPCClient.port}/rest/block/${blockHash}.json`
+		http.get(url, apiRes => {		  		
+
+	  		// couldn't get streaming to work (didn't try too hard)
+	  		// so instead we will store the buffer in mem, yuck!
+	  		let dat = Buffer.from('')
+	  		
+	  		apiRes.on('data', data => {
+	    		dat += data
+	  		})
+			
+			// once we get the result from the bitcoind REST API, forward
+			// it along as the result to the original /api/block request
+			apiRes.on("end", () => {
+				try {
+					const block = JSON.parse(dat.toString())
+					// emit the socket.io event
+		   			io.emit('received-block', JSON.parse(dat.toString()))
+				} catch (err) { /* NOP, in case the response isn't JSON */ } 
+			})
+		})
 	}
 })
 
