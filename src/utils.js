@@ -89,10 +89,8 @@ function buildSQLSelectQuery(params, connection) {
 	                         'file_address_messages', 
 	                         'op_return_utf8_address_messages',
 	                         'op_return_file_address_messages']
-
 	const table = (params.table && supportedTables.indexOf(params.table) > -1) 
 	              ? params.table : 'ascii_coinbase_messages'
-
 	let query = `SELECT * FROM ${connection.escapeId(table)} `
 
 	if (params.valid ||
@@ -102,6 +100,7 @@ function buildSQLSelectQuery(params, connection) {
 		params.transaction ||
 		params.search ||
 		params.nsfw ||
+		params.tags ||
 		typeof params.block_height !== 'undefined') {
 
 		query += `WHERE `
@@ -138,6 +137,14 @@ function buildSQLSelectQuery(params, connection) {
 
 		if (typeof params.block_height !== 'undefined') {
 			query += `block_height = ${connection.escape(params.block_height)} AND `
+		}
+
+		if (params.tags && params.tags.length > 0) {
+			query += '( '
+			params.tags.forEach(tag => {
+				query += `tags LIKE '%,${tag},%' OR `
+			})
+			query = query.replace(/ OR $/, ' ) ')
 		}
 
 		// remove the trailing "AND "

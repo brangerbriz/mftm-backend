@@ -8,7 +8,7 @@ let filter = {
 	nsfw: undefined,
 	annotated: undefined,
 	search: undefined,
-	tags: [],
+	tags: '',
 	offset: 0
 }
 
@@ -27,7 +27,7 @@ let filter = {
 
 var app = new Vue({
   el: '#app',
-  data: { filter, results: [], autoreview: false }
+  data: { filter, results: [], autoreview: false },
 })
 
 Vue.config.devtools = true
@@ -110,6 +110,10 @@ function search() {
 		filter.search = encodeHexString(filter.search)
 	}
 
+	filter.tags = app.filter.tags.split(',')
+								 .map(x => x.trim())
+								 .filter(x => x != '')
+								 
 	const url = `${window.location.protocol}//${window.location.host}/api/review?${Qs.stringify(filter)}`
 	fetch(url, { method: 'get' })
 	.then(res => res.json())
@@ -122,20 +126,39 @@ function search() {
 					formatUTF8(obj)
 				}
 			}
+			obj.tags = decodeTagString(obj.tags)
 		})
-		app.results = json.slice(0, 100)
+		app.results = json
 	})
+}
+
+function encodeTagsString(tags) {
+	return ',' + tags.split(',').map(x => x.trim()).filter(x => x != '').join(',') + ','
+}
+
+function decodeTagString(string) {
+	return string.split(',') // replace ','
+	             .join(', ') // with ', '
+	             .replace(/^, /, '') // remove leading ', '
+	             .replace(/, $/, '') // remove trailing ', '
 }
 
 function updateRecord(prop, result) {
 	
 	const url = `${window.location.protocol}//${window.location.host}/api/review`
 	
+	let value = result[prop]
+	if (prop == 'tags') {
+		console.log('before: ' + value)
+		value = encodeTagsString(value)
+		console.log('after: ' + value)
+	}
+
 	const body = {
 		table: filter.table,
 		id: result.id,
 		update: prop,
-		value: result[prop]
+		value: value
 	}
 	
     const headers = {
