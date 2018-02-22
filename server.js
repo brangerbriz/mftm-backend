@@ -109,6 +109,8 @@ app.get('/api/block/messages', (req, res) => {
 
 // the search api used by the www/review CMS
 app.get('/api/review', (req, res) => {
+	
+	// query the database using  the provided url params
 	console.log(`[http]  GET ${req.url}`)
 	dbPool.getConnection((err, connection) => {
 		req.query.limit = 5 // set the limit here
@@ -134,6 +136,15 @@ app.get('/api/review', (req, res) => {
 				)
 				res.send(results)
 			}
+		})
+	})
+
+	// query the database to count the number of results
+	dbPool.getConnection((err, connection) => {
+		const countQuery = utils.getResultsCount(req.query, connection, (err, count) => {
+			if (err) throw err
+			io.emit('search-count', count)
+			connection.release()
 		})
 	})
 })

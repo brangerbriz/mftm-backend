@@ -27,7 +27,11 @@ let filter = {
 
 var app = new Vue({
   el: '#app',
-  data: { filter, results: [], autoreview: false },
+  data: { filter, 
+  	      results: [], 
+  	      resultsCount: 0,
+  	      progressCount: 0,
+  	      autoreview: false }
 })
 
 Vue.config.devtools = true
@@ -36,7 +40,7 @@ document.getElementById('filter-button').onclick = search
 
 document.getElementById('next-button').onclick = () => {
 	
-	app.filter.offset = parseInt(app.filter.offset) + 5
+	app.filter.offset = (parseInt(app.filter.offset) || 0) + 5
 
 	if (app.autoreview) {
 		app.results.forEach((result) => {
@@ -71,6 +75,10 @@ const socket = io.connect(`http://${location.host}`)
 // data = {blockHash, count}
 socket.on('data-count', data => {
 	dataCounts[data.dataHash] = data.count
+})
+
+socket.on('search-count', count => {
+	app.resultsCount = count
 })
 
 document.onload = search()
@@ -138,6 +146,8 @@ function search() {
 	fetch(url, { method: 'get' })
 	.then(res => res.json())
 	.then(json => {
+
+		app.progressCount = app.filter.offset + json.length
 		json.forEach(obj => {
 			obj.expanded = false
 			if (dataCounts.hasOwnProperty(obj.data_hash)) {

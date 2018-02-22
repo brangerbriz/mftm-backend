@@ -24,6 +24,16 @@ function getDataCounts(table, dataHashes, connection, countCb, doneCb) {
 	})
 }
 
+function getResultsCount(params, connection, callback) {
+	let query = buildSQLSelectQuery(params, connection)
+	query = query.replace(/^SELECT \*/, 'SELECT COUNT(*)')
+	query = query.replace(/ LIMIT .+;$/, ';')
+	connection.query(query, (error, results, fields) => {
+		if (error) callback(error, null)
+		else callback(null, results.map(x => x['COUNT(*)'])[0])
+	})
+}
+
 // get an array of all of the messages from a certain block (using it's index)
 // from the mysql database. searches three tables:
 //     - ascii_coinbase_messages
@@ -245,5 +255,6 @@ module.exports = {
 	buildSQLUpdateQuery,
 	getBlocklist,
 	getBlockMessages,
-	getDataCounts
+	getDataCounts,
+	getResultsCount
 }
