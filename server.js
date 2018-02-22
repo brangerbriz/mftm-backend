@@ -118,10 +118,22 @@ app.get('/api/review', (req, res) => {
 			if (error) {
 				throw error
 				res.send(504)
+				connection.release()
 			} else {
+				utils.getDataCounts(
+					req.query.table.replace(/_unique$/, ''),
+					results.map(x => x.data_hash),
+					connection,
+					function eachCount(err, dataHash, count) {
+						if (err) throw err
+						io.emit('data-count', { dataHash, count })
+					}, 
+					function done(err) {
+						connection.release()
+					}
+				)
 				res.send(results)
 			}
-			connection.release()
 		})
 	})
 })

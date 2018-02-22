@@ -63,7 +63,22 @@ String.prototype.removeCharAt = function(index) {
 	return this.slice(0, index) + this.slice(index + 1);
 }
 
+// a map from data_hash => count used to display the number of times a message
+// appears in the database
+const dataCounts = {}
+const socket = io.connect(`http://${location.host}`)
+// the number of times a message appears in the blockchain
+// data = {blockHash, count}
+socket.on('data-count', data => {
+	dataCounts[data.dataHash] = data.count
+})
+
 document.onload = search()
+
+// https://stackoverflow.com/questions/2901102/how-to-print-a-number-with-commas-as-thousands-separators-in-javascript
+function commaFormatNumber(x) {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
 
 function decodeHexString(hexString) {
 	
@@ -125,6 +140,9 @@ function search() {
 	.then(json => {
 		json.forEach(obj => {
 			obj.expanded = false
+			if (dataCounts.hasOwnProperty(obj.data_hash)) {
+				obj.count = dataCounts[obj.data_hash]
+			}
 			obj.displayData = obj.data
 			if (filter.table.indexOf('utf8') > -1) {
 				obj.displayData = decodeHexString(obj.displayData)
@@ -135,6 +153,7 @@ function search() {
 			obj.tags = decodeTagString(obj.tags)
 		})
 		app.results = json
+		console.log('results updated')
 	})
 }
 
@@ -155,9 +174,7 @@ function updateRecord(prop, result) {
 	
 	let value = result[prop]
 	if (prop == 'tags') {
-		console.log('before: ' + value)
 		value = encodeTagsString(value)
-		console.log('after: ' + value)
 	}
 
 	const body = {

@@ -151,7 +151,9 @@
 		<pre class="data" v-on:click="result.valid = !result.valid;">{{ result.displayData }}</pre>
 		<div class="result-info">
 			<div>
-				{{ moment(result.block_timestamp).format('MMMM Do YYYY, h:mm:ss A') }} &nbsp; | &nbsp;
+				{{ moment(result.block_timestamp).format('MMMM Do YYYY, h:mm:ss A') }}
+				<span v-if="result.count">&nbsp; {{ commaFormatNumber(result.count) }} time{{ result.count > 1 ? 's' : '' }} &nbsp; |</span>
+				&nbsp;
 
 				valid: <input type="checkbox" v-model="result.valid" name='valid' @change="updateRecord('valid', result)"> &nbsp; 
 				bookmarked: <input type="checkbox" v-model="result.bookmarked" @change="updateRecord('bookmarked', result)"> &nbsp;
@@ -177,6 +179,7 @@
 </dir>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/qs/6.5.1/qs.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
 <script type="text/javascript" src="main.js"></script>
 </body>
 </html>

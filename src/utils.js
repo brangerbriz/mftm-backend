@@ -1,3 +1,29 @@
+function getDataCounts(table, dataHashes, connection, countCb, doneCb) {
+
+	let pairs = dataHashes.map(hash => {
+		return {
+			hash,
+			query: `SELECT COUNT(id) FROM ${connection.escapeId(table)} WHERE data_hash = ${connection.escape(hash)};`
+		}
+	})
+
+	let numQueriesReturned = 0
+	pairs.forEach(pair => {
+		connection.query(pair.query, (error, results, fields) => {
+			numQueriesReturned++
+			if (error) {
+				countCb(error, null, null)
+				doneCb(error)
+			} else {
+				countCb(null, pair.hash, results.map(x => x['COUNT(id)'])[0])
+				if (numQueriesReturned == dataHashes.length) {
+					doneCb(null)
+				}
+			}
+		})
+	})
+}
+
 // get an array of all of the messages from a certain block (using it's index)
 // from the mysql database. searches three tables:
 //     - ascii_coinbase_messages
@@ -218,5 +244,6 @@ module.exports = {
 	buildSQLSelectQuery,
 	buildSQLUpdateQuery,
 	getBlocklist,
-	getBlockMessages
+	getBlockMessages,
+	getDataCounts
 }
