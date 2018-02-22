@@ -102,7 +102,6 @@ function search() {
 	// make a copy, because we are going to mutate some of the data and 
 	// we don't want that to show up in the view
 	let filter = JSON.parse(JSON.stringify(app.filter))
-
 	if (filter.transaction == '') filter.transaction = undefined
 	if (filter.search == '') filter.search = undefined
 
@@ -110,9 +109,15 @@ function search() {
 		filter.search = encodeHexString(filter.search)
 	}
 
+	if (filter.unique) {
+		filter.table += '_unique'
+		filter.unique = undefined
+	}
+
 	filter.tags = app.filter.tags.split(',')
 								 .map(x => x.trim())
 								 .filter(x => x != '')
+
 
 	const url = `${window.location.protocol}//${window.location.host}/api/review?${Qs.stringify(filter)}`
 	fetch(url, { method: 'get' })
@@ -156,7 +161,7 @@ function updateRecord(prop, result) {
 	}
 
 	const body = {
-		table: filter.table,
+		table: filter.table + '_unique',
 		data: result.data,
 		update: prop,
 		value: value

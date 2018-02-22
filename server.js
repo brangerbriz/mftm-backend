@@ -132,18 +132,33 @@ app.use('/api/review', bodyParser.json())
 app.post('/api/review', (req, res) => {
 	console.log(`[http]  POST ${req.body}`)
 	dbPool.getConnection((err, connection) => {
-		const query = utils.buildSQLUpdateQuery(req.body, connection)	
+		// query for the unique table
+		const queryUniq = utils.buildSQLUpdateQuery(req.body, connection)
+		
+		// query for the original table
+		req.body.table = req.body.table.replace(/_unique$/, '')
+		const query = utils.buildSQLUpdateQuery(req.body, connection)
+
+		console.log(`[mysql] ${queryUniq}`)
 		console.log(`[mysql] ${query}`)
-		connection.query(query, (error, results, fields) => {
-			console.log(results)
+
+		// update the original and unique database in tandem
+		connection.query(queryUniq, cb)
+		connection.query(query, cb)
+
+		let numQueriesReturned = 0
+		function cb (error, results, fields) {
+			numQueriesReturned++
 			if (error) {
+				console.error('[error] there may now be a database missmatch between the original table and the unique table')
 				res.sendStatus(504)
+				connection.release()
 				throw error
-			} else {
+			} else if (numQueriesReturned == 2) {
 				res.sendStatus(200)
+				connection.release()
 			}
-			connection.release()
-		})
+		}
 	})
 })
 

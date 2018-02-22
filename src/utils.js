@@ -98,7 +98,11 @@ function buildSQLSelectQuery(params, connection) {
 	                         'utf8_address_messages', 
 	                         'file_address_messages', 
 	                         'op_return_utf8_address_messages',
-	                         'op_return_file_address_messages']
+	                         'op_return_file_address_messages',
+	                         'ascii_coinbase_messages_unique', 
+	                         'utf8_address_messages_unique', 
+	                         'op_return_utf8_address_messages_unique' ]
+
 	const table = (params.table && supportedTables.indexOf(params.table) > -1) 
 	              ? params.table : 'ascii_coinbase_messages'
 	let query = `SELECT * FROM ${connection.escapeId(table)} `
@@ -159,10 +163,6 @@ function buildSQLSelectQuery(params, connection) {
 
 		// remove the trailing "AND "
 		query = query.replace(/AND $/, '')
-	}
-
-	if (params.unique === 'true') {
-		query += 'GROUP BY `data` '
 	}
 
 	query += 'ORDER BY `id` '
