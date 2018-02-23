@@ -122,6 +122,9 @@ app.get('/api/review', (req, res) => {
 				res.send(504)
 				connection.release()
 			} else {
+				// use the original tables to count the number of times each
+				// message appears in the blockchain and use socket.io to
+				// stream the results to the client with the 'data-count' event
 				utils.getDataCounts(
 					req.query.table.replace(/_unique$/, ''),
 					results.map(x => x.data_hash),
@@ -131,10 +134,11 @@ app.get('/api/review', (req, res) => {
 						io.emit('data-count', { dataHash, count })
 					}, 
 					function done(err) {
+						if (err) throw err
 						connection.release()
+						res.send(results)
 					}
 				)
-				res.send(results)
 			}
 		})
 	})
@@ -201,13 +205,11 @@ zmqSock.subscribe('hashblock')
 zmqSock.subscribe('') // receive all messages 
 
 zmqSock.on('message', function(topic, message) {
-	// if (topic.toString() != 'hashtx') console.log(topic.toString(), message.length)
-	if (topic == 'rawtx') {
 
+	if (topic == 'rawtx') {
 		rpcClient.decodeRawTransaction(message.toString('hex'), (err, tx) => {
 			io.emit('received-tx', tx)
 		})
-		
 	} else if (topic == 'hashblock') {
 		let blockHash = message.toString('hex')
 		console.log(`[zmq]   recieved a new block ${message.toString('hex')}`)
