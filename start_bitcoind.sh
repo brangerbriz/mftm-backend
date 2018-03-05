@@ -6,4 +6,4 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 bitcoind \
 -conf="${DIR}/bitcoin.conf" \
--datadir=/media/bbpwn2/BBPWN_BACKUP/.bitcoin
+-datadir=/media/bbpwn2/emerge_drive/.bitcoin

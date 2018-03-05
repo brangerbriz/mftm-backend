@@ -1,5 +1,5 @@
 let filter = {
-	table: 'ascii_coinbase_messages',
+	table: 'coinbase_messages',
 	reviewed: undefined,
 	valid: undefined,
 	bookmarked: undefined,
@@ -128,7 +128,7 @@ function search() {
 	if (filter.transaction == '') filter.transaction = undefined
 	if (filter.search == '') filter.search = undefined
 
-	if (filter.search && filter.table.indexOf('utf8') > -1) {
+	if (filter.search) {
 		filter.search = encodeHexString(filter.search)
 	}
 
@@ -154,11 +154,9 @@ function search() {
 				obj.count = dataCounts[obj.data_hash]
 			}
 			obj.displayData = obj.data
-			if (filter.table.indexOf('utf8') > -1) {
-				obj.displayData = decodeHexString(obj.displayData)
-				if (obj.format) {
-					formatUTF8(obj)
-				}
+			obj.displayData = decodeHexString(obj.displayData)
+			if (obj.format) {
+				formatUTF8(obj)
 			}
 			obj.tags = decodeTagString(obj.tags)
 		})

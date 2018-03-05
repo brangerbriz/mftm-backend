@@ -36,25 +36,25 @@ function getResultsCount(params, connection, callback) {
 
 // get an array of all of the messages from a certain block (using it's index)
 // from the mysql database. searches three tables:
-//     - ascii_coinbase_messages
-//     - utf_address_messages
-//     - op_return_utf8_messages
+//     - coinbase_messages
+//     - address_messages
+//     - op_return_messages
 function getBlockMessages(index, connection, callback) {
 	
 	let returnedQueries = 0
 	const messages = []
 
-	var params = {block_height: index, table: 'ascii_coinbase_messages'}
+	var params = {block_height: index, table: 'coinbase_messages'}
 	let query = buildSQLSelectQuery(params, connection)
-	connection.query(query, (e, r, f) => cb(e, r, f, 'ascii coinbase message'))
+	connection.query(query, (e, r, f) => cb(e, r, f, 'coinbase message'))
 	
-	params.table = 'utf8_address_messages'
+	params.table = 'address_messages'
 	query = buildSQLSelectQuery(params, connection)
-	connection.query(query, (e, r, f) => cb(e, r, f, 'utf8 address message'))
+	connection.query(query, (e, r, f) => cb(e, r, f, 'address message'))
 
-	params.table = 'op_return_utf8_address_messages'
+	params.table = 'op_return_address_messages'
 	query = buildSQLSelectQuery(params, connection)
-	connection.query(query, (e, r, f) => cb(e, r, f, 'OP_RETURN utf8 address message'))
+	connection.query(query, (e, r, f) => cb(e, r, f, 'OP_RETURN address message'))
 
 	function cb(error, results, fields, type) {
 		returnedQueries++
@@ -69,7 +69,7 @@ function getBlockMessages(index, connection, callback) {
 // more friendly for the front-end to receive
 function _processMessageResults(results, type) {
 	return results.map(result=> {
-		let data = (type.indexOf('utf8') > -1) ? _decodeHexString(result.data) : result.data
+		let data = _decodeHexString(result.data)
 		// format by adding a \n at every 20th character
 		if (result.format) data = _formatUTF8(data) 
 		return {
@@ -93,9 +93,9 @@ function getBlocklist(nsfw, bookmarked, connection, callback) {
 	let returnedQueries = 0
 	const blocklist = []
 
-	_getBlocklist(nsfw, bookmarked, 'ascii_coinbase_messages', connection, cb)
-	_getBlocklist(nsfw, bookmarked, 'utf8_address_messages', connection, cb)
-	_getBlocklist(nsfw, bookmarked, 'op_return_utf8_address_messages', connection, cb)
+	_getBlocklist(nsfw, bookmarked, 'coinbase_messages', connection, cb)
+	_getBlocklist(nsfw, bookmarked, 'address_messages', connection, cb)
+	_getBlocklist(nsfw, bookmarked, 'op_return_address_messages', connection, cb)
 
 	function cb(err, res) {
 		returnedQueries++
@@ -130,17 +130,17 @@ function _getBlocklist(nsfw, bookmarked, table, connection, callback) {
 // build a semi-complex mysql query from a params object (usually GET url params)
 function buildSQLSelectQuery(params, connection) {
 
-	const supportedTables = ['ascii_coinbase_messages', 
-	                         'utf8_address_messages', 
+	const supportedTables = ['coinbase_messages', 
+	                         'address_messages', 
 	                         'file_address_messages', 
-	                         'op_return_utf8_address_messages',
+	                         'op_return_address_messages',
 	                         'op_return_file_address_messages',
-	                         'ascii_coinbase_messages_unique', 
-	                         'utf8_address_messages_unique', 
-	                         'op_return_utf8_address_messages_unique' ]
+	                         'coinbase_messages_unique', 
+	                         'address_messages_unique', 
+	                         'op_return_address_messages_unique' ]
 
 	const table = (params.table && supportedTables.indexOf(params.table) > -1) 
-	              ? params.table : 'ascii_coinbase_messages'
+	              ? params.table : 'coinbase_messages'
 	let query = `SELECT * FROM ${connection.escapeId(table)} `
 
 	if (params.valid ||
@@ -223,7 +223,7 @@ function buildSQLUpdateQuery(params, connection) {
 }
 
 // take a hex string and transform it into UTF-8. Used for `data` columns from
-// utf_address_messages and op_return_utf8_address_messages tables which store
+// utf_address_messages and op_return_address_messages tables which store
 // data as hex strings.
 function _decodeHexString(hexString) {
 	

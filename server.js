@@ -241,6 +241,9 @@ zmqSock.on('message', function(topic, message) {
 
 // https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_calls_list
 const rpcClient = new bitcoin.Client(config.bitcoinRPCClient)
+rpcClient.getBlockHash(510575, (err, hash) => {
+	console.log(`[!] the block hash for block #510575 is ${hash}`)
+})
 
 // broadcast the current list of bitcoind peers to all connected socket.io
 // clients at an interval set by config.peerInfoRefreshInterval
