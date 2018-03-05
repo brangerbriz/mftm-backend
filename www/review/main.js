@@ -70,7 +70,7 @@ String.prototype.removeCharAt = function(index) {
 // a map from data_hash => count used to display the number of times a message
 // appears in the database
 const dataCounts = {}
-const socket = io.connect(`https://${location.host}:8989`)
+const socket = io.connect(`https://${location.host}`)
 // the number of times a message appears in the blockchain
 // data = {blockHash, count}
 socket.on('data-count', data => {
