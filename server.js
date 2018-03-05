@@ -1,12 +1,15 @@
-const bitcoin    = require('bitcoin')
-const zmq        = require('zmq')
-const mysql      = require('mysql')
-const http       = require('http')
-const socketio   = require('socket.io')
-const express    = require('express')
-const bodyParser = require('body-parser')
-const utils      = require('./src/utils')
-const config     = require('./config')
+const fs          = require('fs')
+const bitcoin     = require('bitcoin')
+const zmq         = require('zmq')
+const mysql       = require('mysql')
+const http        = require('http')
+const https       = require('https')
+const socketio    = require('socket.io')
+const express     = require('express')
+const bodyParser  = require('body-parser')
+const basicAuth   = require('express-basic-auth')
+const utils       = require('./src/utils')
+const config      = require('./config')
 
 // MYSQL server connection -----------------------------------------------------
 
@@ -14,9 +17,14 @@ const dbPool = mysql.createPool(config.mysql)
 
 // Express server --------------------------------------------------------------
 
-const app        = express()
-const httpServer = http.Server(app)
-const io         = socketio(httpServer)
+const credentials = {
+	key: fs.readFileSync('ssl/private.key', 'utf8'),
+	cert: fs.readFileSync('ssl/certificate.crt', 'utf8')
+}
+
+const app         = express()
+const httpsServer = https.createServer(credentials, app)
+const io          = socketio(httpsServer)
 
 io.on('connection', function (socket) {
   	console.log('[socio] socket connection established')
@@ -53,6 +61,9 @@ io.on('connection', function (socket) {
 		})
   	})
 })
+
+// use basic authentication. Reply with a 401 to all non-authed requests.
+app.use(basicAuth(config.basicAuth))
 
 // static server for the www/ folder
 app.use(express.static('www'))
@@ -157,7 +168,7 @@ app.get('/api/review', (req, res) => {
 // we use this endpoint to update the mysql database
 app.use('/api/review', bodyParser.json())
 app.post('/api/review', (req, res) => {
-	console.log(`[http]  POST ${req.body}`)
+	console.log(`[https]  POST ${req.body}`)
 	dbPool.getConnection((err, connection) => {
 		// query for the unique table
 		const queryUniq = utils.buildSQLUpdateQuery(req.body, connection)
@@ -190,8 +201,8 @@ app.post('/api/review', (req, res) => {
 })
 
 // start the server
-httpServer.listen(config.port, () => {
-	console.log(`[http]  server listening at http://localhost:${config.port}`)
+httpsServer.listen(config.port, () => {
+	console.log(`[https]  server listening at https://localhost:${config.port}`)
 })
 
 //ZeroMQ bitcoind communication ------------------------------------------------

@@ -6,7 +6,7 @@
 <body>
 <script src="/socket.io/socket.io.js"></script>
 <script type="text/javascript">
-	const socket = io.connect(`http://${location.host}`)
+	const socket = io.connect(`https://${location.host}`)
 
 	// this will be received when a node receives an unconfirmed transaction
   	socket.on('received-tx', function(data) {
@@ -45,7 +45,7 @@
   	})
 
   	// fetch a block using a block height index
-  	fetch(`http://${location.host}/api/block?index=500000`)
+  	fetch(`https://${location.host}/api/block?index=500000`, { headers: getAuthHeaders() })
   	.then(res => res.json())
   	.then(data => {
 		console.log(`This is how you get a block from using the block index:`)
@@ -55,7 +55,7 @@
   	})
 
   	// fetch all messages in a block using the block height index
-  	fetch(`http://${location.host}/api/block/messages?index=0`)
+  	fetch(`https://${location.host}/api/block/messages?index=0`, { headers: getAuthHeaders() })
   	.then(res => res.json())
   	.then(data => {
 		console.log(`This is how you get the messages in a block using the block index:`)
@@ -64,6 +64,17 @@
   		console.error(err)
   	})
 
+    function base64(text) {
+        return btoa(unescape(encodeURIComponent(text)))
+    }
+
+    function getAuthHeaders() {
+        const headers = new Headers()
+        const user = 'admin'
+        const pw = 'branger_briz_r&&d_lab'
+        headers.append('Authorization', 'Basic ' + base64(user + ':' + pw))
+        return headers
+    }
 </script>
 </body>
 </html>

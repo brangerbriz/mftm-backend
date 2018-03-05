@@ -70,7 +70,7 @@ String.prototype.removeCharAt = function(index) {
 // a map from data_hash => count used to display the number of times a message
 // appears in the database
 const dataCounts = {}
-const socket = io.connect(`http://${location.host}`)
+const socket = io.connect(`https://${location.host}:8989`)
 // the number of times a message appears in the blockchain
 // data = {blockHash, count}
 socket.on('data-count', data => {
@@ -143,7 +143,7 @@ function search() {
 
 
 	const url = `${window.location.protocol}//${window.location.host}/api/review?${Qs.stringify(filter)}`
-	fetch(url, { method: 'get' })
+	fetch(url, { method: 'get', headers: getAuthHeaders() })
 	.then(res => res.json())
 	.then(json => {
 
@@ -163,6 +163,18 @@ function search() {
 		app.results = json
 		console.log('results updated')
 	})
+}
+
+function base64(text) {
+	return btoa(unescape(encodeURIComponent(text)))
+}
+
+function getAuthHeaders() {
+	const headers = new Headers()
+	const user = 'admin'
+	const pw = 'branger_briz_r&&d_lab'
+	headers.append('Authorization', 'Basic ' + base64(user + ':' + pw))
+	return headers
 }
 
 function encodeTagsString(tags) {
@@ -192,10 +204,9 @@ function updateRecord(prop, result) {
 		value: value
 	}
 	
-    const headers = {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-	}
+	const headers = getAuthHeaders()
+	headers.append('Accept', 'application/json')
+	headers.append('Content-Type', 'application/json')
 
 	fetch(url, { method: 'post', body: JSON.stringify(body), headers })
 }
