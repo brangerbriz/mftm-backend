@@ -141,7 +141,13 @@ function search() {
 								 .map(x => x.trim())
 								 .filter(x => x != '')
 
+	// out vue interface sets the value of some properties to "undefined"
+	// instead of undefined. Fix this here.
+	for (key in filter) {
+		if (filter[key] == "undefined") filter[key] = undefined
+	}
 
+	app.results = []						 
 	const url = `${window.location.protocol}//${window.location.host}/api/review?${Qs.stringify(filter)}`
 	fetch(url, { method: 'get', headers: getAuthHeaders() })
 	.then(res => res.json())
