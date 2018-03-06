@@ -38,8 +38,7 @@ Vue.config.devtools = true
 
 document.getElementById('filter-button').onclick = search
 
-document.getElementById('next-button').onclick = () => {
-	
+document.getElementById('next-button').onclick = (e) => {
 	app.filter.offset = (parseInt(app.filter.offset) || 0) + 5
 
 	if (app.autoreview) {
@@ -50,13 +49,13 @@ document.getElementById('next-button').onclick = () => {
 	}
 	
 	search()
-	window.scrollTo(0, 0)
+	e.preventDefault()
 }
 
-document.getElementById('prev-button').onclick = () => {
+document.getElementById('prev-button').onclick = (e) => {
 	app.filter.offset = Math.max(0, parseInt(app.filter.offset) - 5)
 	search()
-	window.scrollTo(0, 0)
+	e.preventDefault()
 }
 
 String.prototype.insertAt=function(index, string) { 
@@ -120,6 +119,10 @@ function formatUTF8(result) {
 	}
 }
 
+if ('scrollRestoration' in window.history) {
+  window.history.scrollRestoration = 'manual'
+}
+
 function search() {
 
 	// make a copy, because we are going to mutate some of the data and 
@@ -147,7 +150,9 @@ function search() {
 		if (filter[key] == "undefined") filter[key] = undefined
 	}
 
-	app.results = []						 
+	app.results = []
+	app.progressCount = 0
+	const prevScrollHeight = window.pageYOffset
 	const url = `${window.location.protocol}//${window.location.host}/api/review?${Qs.stringify(filter)}`
 	fetch(url, { method: 'get', headers: getAuthHeaders() })
 	.then(res => res.json())
@@ -167,7 +172,11 @@ function search() {
 			obj.tags = decodeTagString(obj.tags)
 		})
 		app.results = json
-		console.log('results updated')
+		
+		// this doesn't work without a setTimeout
+		setTimeout(() => window.scrollTo(0, prevScrollHeight), 0)
+
+
 	})
 }
 

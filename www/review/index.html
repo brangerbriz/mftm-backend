@@ -8,7 +8,7 @@
 		body {
 			font-family: 'Work Sans', 'Ubuntu', 'Sans Serif';
 			font-weight: 400;
-			width: 800px;
+			width: 960px;
 			margin: auto;
 			margin-top: 25px;
 
@@ -34,14 +34,12 @@
 		}
 
 		#results {
-			margin-top: 10px;
+			margin-top: 40px;
 			text-align: left;
 		}
 
 		#next-button, #prev-button {
 			float: right;
-			margin-top: 10px;
-			margin-bottom: 10px;
 		}
 
 		#prev-button {
@@ -52,6 +50,10 @@
 			padding-top: 10px;
 			border-bottom: 1px solid black;
 			cursor: pointer;
+		}
+
+		.result:last-child {
+			border-bottom: none;
 		}
 
 		.result-info, .line-item {
@@ -148,13 +150,17 @@
 	<div id="results-count">{{ commaFormatNumber(progressCount) }} / {{ commaFormatNumber(resultsCount) }} results</div>
 
 </form>
+<div>
+	<button id="next-button" type="button">Next</button>
+	<button id="prev-button" type="button">Previous</button>
+</div>
 
 <div id="results">
 	<div v-for="result in results" class="result">
 		<pre class="data" v-on:click="result.valid = !result.valid;">{{ result.displayData }}</pre>
 		<div class="result-info">
 			<div>
-				{{ moment(result.block_timestamp).format('MMMM Do YYYY, h:mm:ss A') }}
+				{{ moment(result.block_timestamp).format('MMM Do YYYY, h:mm A') }}
 				<span v-if="result.count">&nbsp; {{ commaFormatNumber(result.count) }} time{{ result.count > 1 ? 's' : '' }} &nbsp; |</span>
 				&nbsp;
 
@@ -175,9 +181,6 @@
 		</div>
 	</div>
 </div>
-
-<button id="next-button" type="button">Next</button>
-<button id="prev-button" type="button">Previous</button>
 
 </dir>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/qs/6.5.1/qs.js"></script>
