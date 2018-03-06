@@ -87,17 +87,6 @@ function commaFormatNumber(x) {
   return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-function decodeHexString(hexString) {
-	
-	let decoded = ''
-	for (let i = 0; i < hexString.length; i += 2) {
-		var decimalValue = parseInt(hexString.slice(i, i + 2), 16); // Base 16 or hexadecimal
-		decoded += String.fromCharCode(decimalValue);
-	}
-	return decoded
-	
-}
-
 function encodeHexString(string) {
 	let encoded = ''
 	for (let i = 0; i < string.length; i++) {
@@ -117,10 +106,6 @@ function formatUTF8(result) {
 		}
 		result.displayData = formatted
 	}
-}
-
-if ('scrollRestoration' in window.history) {
-  window.history.scrollRestoration = 'manual'
 }
 
 function search() {
@@ -164,8 +149,7 @@ function search() {
 			if (dataCounts.hasOwnProperty(obj.data_hash)) {
 				obj.count = dataCounts[obj.data_hash]
 			}
-			obj.displayData = obj.data
-			obj.displayData = decodeHexString(obj.displayData)
+			obj.displayData = obj.utf8_data
 			if (obj.format) {
 				formatUTF8(obj)
 			}

@@ -69,7 +69,7 @@ function getBlockMessages(index, connection, callback) {
 // more friendly for the front-end to receive
 function _processMessageResults(results, type) {
 	return results.map(result=> {
-		let data = _decodeHexString(result.data)
+		let data = result.utf8_data
 		// format by adding a \n at every 20th character
 		if (result.format) data = _formatUTF8(data) 
 		return {
@@ -141,7 +141,7 @@ function buildSQLSelectQuery(params, connection) {
 
 	const table = (params.table && supportedTables.indexOf(params.table) > -1) 
 	              ? params.table : 'coinbase_messages'
-	let query = `SELECT * FROM ${connection.escapeId(table)} `
+	let query = `SELECT *, CONVERT(UNHEX(\`data\`) USING utf8) as utf8_data FROM ${connection.escapeId(table)} `
 
 	if (params.valid ||
 		params.reviewed || 
@@ -220,19 +220,6 @@ function buildSQLUpdateQuery(params, connection) {
 	query += `SET ${connection.escapeId(params.update)} = ${connection.escape(updateVal)} `
 	query += `WHERE \`data\` = ${connection.escape(params.data)};`
 	return query
-}
-
-// take a hex string and transform it into UTF-8. Used for `data` columns from
-// utf_address_messages and op_return_address_messages tables which store
-// data as hex strings.
-function _decodeHexString(hexString) {
-	
-	let decoded = ''
-	for (let i = 0; i < hexString.length; i += 2) {
-		var decimalValue = parseInt(hexString.slice(i, i + 2), 16); // Base 16 or hexadecimal
-		decoded += String.fromCharCode(decimalValue);
-	}
-	return decoded	
 }
 
 // some people format the data they save in the blockchain neatly into 20 byte
