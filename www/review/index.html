@@ -145,7 +145,7 @@
 	<br>
 	Autoreview: <input type="checkbox" v-model="autoreview"></input>
 
-	<div id="results-count">{{ progressCount }} / {{ resultsCount }} results</div>
+	<div id="results-count">{{ commaFormatNumber(progressCount) }} / {{ commaFormatNumber(resultsCount) }} results</div>
 
 </form>
 

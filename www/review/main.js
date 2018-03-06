@@ -153,7 +153,7 @@ function search() {
 	.then(res => res.json())
 	.then(json => {
 
-		app.progressCount = app.filter.offset + json.length
+		app.progressCount = parseInt(app.filter.offset) + json.length
 		json.forEach(obj => {
 			obj.expanded = false
 			if (dataCounts.hasOwnProperty(obj.data_hash)) {
