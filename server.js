@@ -18,8 +18,8 @@ const dbPool = mysql.createPool(config.mysql)
 // Express server --------------------------------------------------------------
 
 const credentials = {
-	key: fs.readFileSync('ssl/private.key', 'utf8'),
-	cert: fs.readFileSync('ssl/certificate.crt', 'utf8')
+	key: fs.readFileSync(config.ssl.key, 'utf8'),
+	cert: fs.readFileSync(config.ssl.cert, 'utf8')
 }
 
 const app         = express()
@@ -252,9 +252,6 @@ zmqSock.on('message', function(topic, message) {
 
 // https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_calls_list
 const rpcClient = new bitcoin.Client(config.bitcoinRPCClient)
-rpcClient.getBlockHash(510575, (err, hash) => {
-	console.log(`[!] the block hash for block #510575 is ${hash}`)
-})
 
 // broadcast the current list of bitcoind peers to all connected socket.io
 // clients at an interval set by config.peerInfoRefreshInterval
