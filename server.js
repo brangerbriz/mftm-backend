@@ -158,7 +158,7 @@ app.get('/api/review', (req, res) => {
 	dbPool.getConnection((err, connection) => {
 		const countQuery = utils.getResultsCount(req.query, connection, (err, count) => {
 			if (err) throw err
-			io.emit('search-count', count)
+			io.emit('search-count', { count, clientId: req.query.clientId })
 			connection.release()
 		})
 	})

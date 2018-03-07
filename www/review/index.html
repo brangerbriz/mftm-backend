@@ -46,6 +46,12 @@
 			float: left;
 		}
 
+		#all-valid {
+			text-align: center;
+			display: block;
+			margin: auto;
+		}
+
 		.result {
 			padding-top: 10px;
 			border-bottom: 1px solid black;
@@ -70,7 +76,7 @@
 	<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vue"></script>
 </head>
 <body>
-<dir id="app">
+<div id="app">
 <h2>Query</h2>
 <form id="query-form" method="GET" action="">
 	
@@ -182,7 +188,9 @@
 	</div>
 </div>
 
-</dir>
+<button id="all-valid" type="button" v-on:click="allValid()">All valid</button>
+
+</div>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/qs/6.5.1/qs.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
 <script src="/socket.io/socket.io.js"></script>

@@ -9,7 +9,8 @@ let filter = {
 	annotated: undefined,
 	search: undefined,
 	tags: '',
-	offset: 0
+	offset: 0,
+	clientId: Math.random()
 }
 
 // let results = [{
@@ -40,14 +41,6 @@ document.getElementById('filter-button').onclick = search
 
 document.getElementById('next-button').onclick = (e) => {
 	app.filter.offset = (parseInt(app.filter.offset) || 0) + 5
-
-	if (app.autoreview) {
-		app.results.forEach((result) => {
-			result.reviewed = true
-			updateRecord('reviewed', result)
-		})
-	}
-	
 	search()
 	e.preventDefault()
 }
@@ -76,8 +69,11 @@ socket.on('data-count', data => {
 	dataCounts[data.dataHash] = data.count
 })
 
-socket.on('search-count', count => {
-	app.resultsCount = count
+socket.on('search-count', data => {
+	// this is kind of a hack because the 'search-count' event is broadcast to
+	// all clients :/
+	if (parseFloat(data.clientId) == filter.clientId)
+		app.resultsCount = data.count
 })
 
 document.onload = search()
@@ -95,6 +91,23 @@ function encodeHexString(string) {
 	return encoded
 }
 
+function allValid() {
+	app.results.forEach(res => {
+		res.valid = true
+		updateRecord('valid', res)
+	})
+
+}
+
+function autoreview() {
+	if (app.autoreview) {
+		app.results.forEach((result) => {
+			result.reviewed = true
+			updateRecord('reviewed', result)
+		})
+	}
+}
+
 function formatUTF8(result) {
 
 	if (result.displayData.length < 20) return
@@ -109,6 +122,8 @@ function formatUTF8(result) {
 }
 
 function search() {
+
+	autoreview()
 
 	// make a copy, because we are going to mutate some of the data and 
 	// we don't want that to show up in the view

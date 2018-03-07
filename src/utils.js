@@ -141,7 +141,9 @@ function buildSQLSelectQuery(params, connection) {
 
 	const table = (params.table && supportedTables.indexOf(params.table) > -1) 
 	              ? params.table : 'coinbase_messages'
-	let query = `SELECT *, CONVERT(UNHEX(\`data\`) USING utf8) as utf8_data FROM ${connection.escapeId(table)} `
+	// use utf8mb4 as per:
+	// https://stackoverflow.com/questions/34637105/the-ultimate-emoji-encoding-scheme
+	let query = `SELECT *, CONVERT(UNHEX(\`data\`) USING utf8mb4) as utf8_data FROM ${connection.escapeId(table)} `
 
 	if (params.valid ||
 		params.reviewed || 
