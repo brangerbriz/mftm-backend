@@ -6,6 +6,7 @@ const http        = require('http')
 const https       = require('https')
 const socketio    = require('socket.io')
 const express     = require('express')
+const cors        = require('cors')
 const bodyParser  = require('body-parser')
 const basicAuth   = require('express-basic-auth')
 const utils       = require('./src/utils')
@@ -61,6 +62,9 @@ io.on('connection', function (socket) {
 		})
   	})
 })
+
+// allow cross-origin requests
+app.use(cors())
 
 // use basic authentication. Reply with a 401 to all non-authed requests.
 app.use(basicAuth(config.basicAuth))

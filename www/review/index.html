@@ -163,7 +163,7 @@
 
 <div id="results">
 	<div v-for="result in results" class="result">
-		<pre class="data" v-on:click="result.valid = !result.valid; updateRecord('valid', result);">{{ result.displayData }}</pre>
+		<pre class="data">{{ result.displayData }}</pre>
 		<div class="result-info">
 			<div>
 				{{ moment(result.block_timestamp).format('MMM Do YYYY, h:mm A') }}
