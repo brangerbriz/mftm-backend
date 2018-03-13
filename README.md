@@ -7,6 +7,7 @@ This repo contains `Node.js` server-side code for *Messages from the Mines*. It 
 - Serves an admin data review CMS at <https://localhost:8989/review>
 
 ## Installing Dependencies
+
 ```bash
 # install the ZeroMQ development files
 sudo apt-get update
@@ -22,6 +23,54 @@ For security reasons, we haven't included keys in the `ssl/` folder. Create some
 
 ```bash
 openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout ssl/private.key -out ssl/certificate.crt
+```
+
+## Edit credentials in `config.json` and `bitcoin.conf`
+
+[`config.json`](config.json) comes with dummy values for:
+	- Basic authentication user/pass
+	- MySQL user/pass
+	- `bitcoind` JSONRPC user/pass
+
+Edit `basicAuth.users`, `mysql.user`, `mysql.password`, `bitcoinRPCClient.user`, and `bitcoinRPCClient.pass`.
+
+```json
+{
+	"port": 8989,
+	"peerInfoRefreshInterval": 10000,
+	"bitcoinZMQAddress": "tcp://127.0.0.1:28332",
+	"basicAuth": {
+		"users": {
+			"admin": "change-me-or-get-pwned"
+		},
+		"challenge": true
+	},
+	"ssl": {
+		"key": "ssl/private.key",
+		"cert": "ssl/certificate.crt"
+	},
+	"mysql": {
+		"connectionLimit": 100,
+		"host": "localhost",
+		"user": "root",
+		"password": "change-me-or-get-pwned",
+		"database": "messages_from_the_mines"
+	},
+	"bitcoinRPCClient": {
+		"host": "localhost",
+	  	"port": 8332,
+	  	"user": "admin",
+	  	"pass": "change-me-or-get-pwned",
+	  	"timeout": 30000
+	}
+}
+```
+
+[`bitcoin.conf`](bitcoin.conf) contains dummy values for `rpcuser` and `rpcpassword` as well. Change those too.
+
+```
+rpcuser=admin
+rpcpassword=change-me-or-get-pwned
 ```
 
 ## Start the `bitcoind` Daemon
