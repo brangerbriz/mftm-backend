@@ -179,18 +179,6 @@ function search() {
 	})
 }
 
-function base64(text) {
-	return btoa(unescape(encodeURIComponent(text)))
-}
-
-function getAuthHeaders() {
-	const headers = new Headers()
-	const user = 'admin'
-	const pw = 'branger_briz_r&&d_lab'
-	headers.append('Authorization', 'Basic ' + base64(user + ':' + pw))
-	return headers
-}
-
 function encodeTagsString(tags) {
 	return ',' + tags.split(',').map(x => x.trim()).filter(x => x != '').join(',') + ','
 }

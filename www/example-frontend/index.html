@@ -5,6 +5,7 @@
 </head>
 <body>
 <script src="/socket.io/socket.io.js"></script>
+<script type="text/javascript" src="../auth.js"></script>
 <script type="text/javascript">
 	const socket = io.connect(`https://${location.host}`)
 
@@ -63,18 +64,6 @@
   	}).catch(err=>{
   		console.error(err)
   	})
-
-    function base64(text) {
-        return btoa(unescape(encodeURIComponent(text)))
-    }
-
-    function getAuthHeaders() {
-        const headers = new Headers()
-        const user = 'admin'
-        const pw = 'branger_briz_r&&d_lab'
-        headers.append('Authorization', 'Basic ' + base64(user + ':' + pw))
-        return headers
-    }
 </script>
 </body>
 </html>
