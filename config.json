@@ -1,0 +1,30 @@
+{
+	"port": 8989,
+	"peerInfoRefreshInterval": 10000,
+	"bitcoinZMQAddress": "tcp://127.0.0.1:28332",
+	"basicAuth": {
+		"users": {
+			"admin": ""
+		},
+		"challenge": true
+	},
+	"ssl": {
+		"key": "ssl/private.key",
+		"cert": "ssl/certificate.crt"
+	},
+	"mysql": {
+		"connectionLimit": 100,
+		"host": "localhost",
+		"user": "",
+		"password": "",
+		"database": "messages_from_the_mines"
+	},
+	"bitcoinRPCClient": {
+		"host": "localhost",
+	  	"port": 8332,
+	  	"user": "",
+	  	"pass": "",
+	  	"timeout": 30000
+	}
+}
+	

@@ -11,8 +11,7 @@
 			width: 960px;
 			margin: auto;
 			margin-top: 25px;
-
-
+			font-size: 10pt;
 		}
 
 		h2 {
@@ -175,13 +174,12 @@
 				nsfw: <input type="checkbox" v-model="result.nsfw" @change="updateRecord('nsfw', result)"> &nbsp;
 				reviewed: <input type="checkbox" v-model="result.reviewed" @change="updateRecord('reviewed', result)"> &nbsp;
 				<span v-if="typeof result.format !== 'undefined'">format: <input type="checkbox" v-model="result.format" @change="formatUTF8(result); updateRecord('format', result);"> &nbsp;</span>
-
 				<span v-on:click="result.expanded = !result.expanded">...</span>
+				<div>tags: <input type="text" v-model='result.tags' @change="updateRecord('tags', result)"></div>
 			</div>
 			<div v-show="result.expanded">
 				<div class="line-item">block: <a :href='"https://blockchain.info/block-height/" + result.block_height' target='_blank'>{{ result.block_height }} </a></div>
 				<div class="line-item">tx: <a :href='"https://blockchain.info/tx/" + result.transaction_hash' target='_blank'> {{ result.transaction_hash }} </a></div>
-				<div class="line-item">tags: <input type="text" v-model='result.tags' @change="updateRecord('tags', result)"></div>
 				<textarea v-model="result.annotation" @change="updateRecord('annotation', result)"></textarea>
 			</div>
 		</div>

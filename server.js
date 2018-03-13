@@ -10,7 +10,9 @@ const cors        = require('cors')
 const bodyParser  = require('body-parser')
 const basicAuth   = require('express-basic-auth')
 const utils       = require('./src/utils')
-const config      = require('./config')
+
+// LOAD config.js
+const config = JSON.parse(fs.readFileSync('config.json', 'utf8'))
 
 // MYSQL server connection -----------------------------------------------------
 
