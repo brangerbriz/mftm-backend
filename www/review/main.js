@@ -114,7 +114,7 @@ function formatUTF8(result) {
 
 	if (result.format) {
 		let formatted = ''
-		for (let i = 0; i < result.displayData.length - 20; i += 20) {
+		for (let i = 0; i < result.displayData.length; i += 20) {
 			formatted += result.displayData.slice(i, i + 20) + '\n'
 		}
 		result.displayData = formatted
