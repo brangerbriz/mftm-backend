@@ -10,6 +10,7 @@ const cors        = require('cors')
 const bodyParser  = require('body-parser')
 const basicAuth   = require('express-basic-auth')
 const utils       = require('./src/utils')
+const _           = require('underscore')
 
 // LOAD config.js
 const config = JSON.parse(fs.readFileSync('config.json', 'utf8'))
@@ -45,21 +46,37 @@ io.on('connection', function (socket) {
   		// and bookmarked messages
 		dbPool.getConnection((err, connection) => {
 
+			const blocklist = {
+				all: [],
+				sfw: [],
+				valid: [],
+				bookmarked: []
+			}
+
 			// we will use this to know when to close the MYSQL pool connection
-			let queriesReturned = 0
-			
-			// all messages, including nsfw
-			utils.getBlocklist(null, null, connection, (err, blocklist) => {
-				queriesReturned++
-				if (queriesReturned == 2) connection.release()
+			const done = _.after(4, () => {
 				io.emit('message-blocklist', blocklist)
+				connection.release()
 			})
 
-			// bookmarked messages, including nsfw
-			utils.getBlocklist(null, true, connection, (err, blocklist) => {
-				queriesReturned++
-				if (queriesReturned == 2) connection.release()
-				io.emit('bookmarked-blocklist', blocklist)
+			utils.getBlocklist({}, connection, (err, list) => {
+				blocklist.all = list
+				done()
+			})
+
+			utils.getBlocklist({ valid: true }, connection, (err, list) => {
+				blocklist.valid = list
+				done()
+			})
+
+			utils.getBlocklist({ sfw: true }, connection, (err, list) => {
+				blocklist.sfw = list
+				done()
+			})
+
+			utils.getBlocklist({ bookmarked: true }, connection, (err, list) => {
+				blocklist.bookmarked = list
+				done()
 			})
 		})
   	})
@@ -118,8 +135,12 @@ app.get('/api/block/messages', (req, res) => {
 	const index = parseInt(req.query.index)
 	dbPool.getConnection((err, connection) => {
 		utils.getBlockMessages(index, connection, (err, messages) => {
-			connection.release()
+			console.log('err')
+			console.log(err)
+			console.log('message')
+			console.log(messages)
 			res.json(messages)
+			connection.release()
 		})
 	})
 })

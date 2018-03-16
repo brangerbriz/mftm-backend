@@ -1,3 +1,5 @@
+const _ = require('underscore')
+
 function getDataCounts(table, dataHashes, connection, countCb, doneCb) {
 
 	let pairs = dataHashes.map(hash => {
@@ -41,8 +43,8 @@ function getResultsCount(params, connection, callback) {
 //     - op_return_messages
 function getBlockMessages(index, connection, callback) {
 	
-	let returnedQueries = 0
-	const messages = []
+	const done = _.after(3, callback)
+	let messages = []
 
 	var params = {block_height: index, table: 'coinbase_messages'}
 	let query = buildSQLSelectQuery(params, connection)
@@ -57,11 +59,10 @@ function getBlockMessages(index, connection, callback) {
 	connection.query(query, (e, r, f) => cb(e, r, f, 'OP_RETURN address message'))
 
 	function cb(error, results, fields, type) {
-		returnedQueries++
 		if (error) callback(error, null)
 		results = _processMessageResults(results, type)
-		messages.push(...results)
-		if (returnedQueries == 3) callback(null, messages)
+		messages = messages.concat(results)
+		done(null, messages)
 	}
 }
 
@@ -88,35 +89,35 @@ function _processMessageResults(results, type) {
 
 // get a list of block height indicies that contain address messages. 
 // nsfw and bookmarked params act as a filter. nsfw actually == !nsfw (whoops!)
-function getBlocklist(nsfw, bookmarked, connection, callback) {
+function getBlocklist(params, connection, callback) {
 	
-	let returnedQueries = 0
-	const blocklist = []
+	const done = _.after(3, callback)
+	let blocklist = []
 
-	_getBlocklist(nsfw, bookmarked, 'coinbase_messages', connection, cb)
-	_getBlocklist(nsfw, bookmarked, 'address_messages', connection, cb)
-	_getBlocklist(nsfw, bookmarked, 'op_return_address_messages', connection, cb)
+	_getBlocklist(params, 'coinbase_messages', connection, cb)
+	_getBlocklist(params, 'address_messages', connection, cb)
+	_getBlocklist(params, 'op_return_address_messages', connection, cb)
 
 	function cb(err, res) {
-		returnedQueries++
 		if (err) callback(err, null)
-		blocklist.push(...res)
-		if (returnedQueries == 3) callback(null, blocklist)
+		blocklist = blocklist.concat(res)
+		done(null, blocklist)
 	}
 }
 
 // internal method to extract blocklist from a single table
-function _getBlocklist(nsfw, bookmarked, table, connection, callback) {
+function _getBlocklist(params, table, connection, callback) {
 	
-	let query = `SELECT DISTINCT block_height FROM ${table} WHERE valid = 1 `
-	if (nsfw) {
-		// only safe for work
-		query += `AND nsfw = 0 `
+	let query = `SELECT DISTINCT block_height FROM ${table} `
+	
+	if (params.sfw) {
+		query += `WHERE nsfw = 0 `
+	} else if (params.bookmarked) {
+		query += `WHERE bookmarked = 1 `
+	} else if (params.valid) {
+		query += `WHERE valid = 1 `
 	}
 
-	if (bookmarked) {
-		query += `AND bookmarked = 1 `
-	}
 	query += 'ORDER BY block_height;'
 	connection.query(query, (error, results, fields) => {
 		if (error) {
