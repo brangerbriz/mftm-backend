@@ -35,12 +35,8 @@ io.on('connection', function (socket) {
   	
   	// send the current block height on socket connection
   	rpcClient.getBlockCount((err, count) => {
-  		
-  		if (err) {
-  			console.error(err)
-  		} else {
-  			socket.emit('block-count', count)
-  		}
+
+  		if (err) console.error(err)
 
   		// also send a list of block indexes that contain messages
   		// and bookmarked messages
@@ -55,7 +51,8 @@ io.on('connection', function (socket) {
 
 			// we will use this to know when to close the MYSQL pool connection
 			const done = _.after(4, () => {
-				io.emit('message-blocklist', blocklist)
+				console.log(blocklist.all.length)
+				io.emit('blockchain-data', { blocklist, height: count })
 				connection.release()
 			})
 
