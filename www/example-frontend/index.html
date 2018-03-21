@@ -4,7 +4,8 @@
 	<title>Example Frontend</title>
 </head>
 <body>
-<script src="/socket.io/socket.io.js"></script>
+<script type="text/javascript" src="/socket.io/socket.io.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/qs/6.5.1/qs.js"></script>
 <script type="text/javascript" src="../auth.js"></script>
 <script type="text/javascript">
 	const socket = io.connect(`https://${location.host}`)
@@ -49,7 +50,7 @@
   	fetch(`https://${location.host}/api/block?index=500000`, { headers: getAuthHeaders() })
   	.then(res => res.json())
   	.then(data => {
-		console.log(`This is how you get a block from using the block index:`)
+		console.log(`This is how you get a block using the block index:`)
 		console.log(data)
   	}).catch(err=>{
   		console.error(err)
@@ -64,6 +65,31 @@
   	}).catch(err=>{
   		console.error(err)
   	})
+
+    // fetch all messages in a block using the block height index
+    fetch(`https://${location.host}/api/block/messages?index=0`, { headers: getAuthHeaders() })
+    .then(res => res.json())
+    .then(data => {
+    console.log(`This is how you get the messages in a block using the block index:`)
+    console.log(data)
+    }).catch(err=>{
+      console.error(err)
+    })
+
+    const filter = {
+      search: 'asdf',
+      tags: ['test', 'love']
+    }
+    // fetch all messages in a block using the block height index
+    fetch(`https://${location.host}/api/filter/blocklist?${Qs.stringify(filter)}`, { headers: getAuthHeaders() })
+    .then(res => res.json())
+    .then(data => {
+    console.log(`This is how you get a filtered blocklist`)
+    console.log(data)
+    }).catch(err=>{
+      console.error(err)
+    })
+    
 </script>
 </body>
 </html>

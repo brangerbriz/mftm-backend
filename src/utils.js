@@ -94,14 +94,16 @@ function getBlocklist(params, connection, callback) {
 	const done = _.after(3, callback)
 	let blocklist = []
 
-	_getBlocklist(params, 'coinbase_messages', connection, cb)
-	_getBlocklist(params, 'address_messages', connection, cb)
-	_getBlocklist(params, 'op_return_address_messages', connection, cb)
+	_getBlocklist(params, 'coinbase_messages_unique', connection, cb)
+	_getBlocklist(params, 'address_messages_unique', connection, cb)
+	_getBlocklist(params, 'op_return_address_messages_unique', connection, cb)
 
 	function cb(err, res) {
-		if (err) callback(err, null)
-		blocklist = blocklist.concat(res)
-		done(null, blocklist)
+		if (err) done(err, null)
+		else {
+			blocklist = blocklist.concat(res)
+			done(null, blocklist)
+		}
 	}
 }
 
@@ -110,15 +112,40 @@ function _getBlocklist(params, table, connection, callback) {
 	
 	let query = `SELECT DISTINCT block_height FROM ${table} `
 	
-	if (params.sfw) {
-		query += `WHERE nsfw = 0 `
-	} else if (params.bookmarked) {
-		query += `WHERE bookmarked = 1 `
-	} else if (params.valid) {
-		query += `WHERE valid = 1 `
+	if (params.sfw || params.bookmarked || params.valid || params.search || params.tags) {
+		
+		query += 'WHERE '
+
+		if (params.sfw) {
+			query += `nsfw = 0 AND `
+		}
+
+		if (params.bookmarked) {
+			query += `bookmarked = 1 AND `
+		}
+
+		if (params.valid) {
+			query += `valid = 1 AND `
+		} 
+		
+		if (params.search) {
+			query += `\`data\` LIKE CONCAT('%', HEX(${connection.escape(params.search)}), '%') AND `
+		}
+
+		if (params.tags && params.tags.length > 0) {
+			query += '('
+			query += params.tags.map(tag => {
+				return `tags LIKE ${connection.escape('%' + tag + '%')} OR `
+			}).join('').replace(/OR $/, '')
+			query += ') '
+		}
 	}
 
+	// remove the trailing "AND " and "OR "
+	query = query.replace(/AND $/, '')
+
 	query += 'ORDER BY block_height;'
+	console.log(query)
 	connection.query(query, (error, results, fields) => {
 		if (error) {
 			callback(error, null)

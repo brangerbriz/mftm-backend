@@ -51,7 +51,6 @@ io.on('connection', function (socket) {
 
 			// we will use this to know when to close the MYSQL pool connection
 			const done = _.after(4, () => {
-				console.log(blocklist.all.length)
 				io.emit('blockchain-data', { blocklist, height: count })
 				connection.release()
 			})
@@ -142,6 +141,17 @@ app.get('/api/block/messages', (req, res) => {
 	})
 })
 
+app.get('/api/filter/blocklist', (req, res) => {
+	console.log(`[http]  GET ${req.url}`)
+	dbPool.getConnection((err, connection) => {
+		console.log('OUT HERE')
+		console.log(req.query)
+		utils.getBlocklist(req.query, connection, (err, list) => {
+			res.send(list)
+		})
+	})
+})
+
 // the search api used by the www/review CMS
 app.get('/api/review', (req, res) => {
 	
@@ -154,7 +164,7 @@ app.get('/api/review', (req, res) => {
 		connection.query(query, (error, results, fields) => {
 			if (error) {
 				throw error
-				res.send(504)
+				res.sendStaus(504)
 				connection.release()
 			} else {
 				// use the original tables to count the number of times each
@@ -217,7 +227,7 @@ app.post('/api/review', (req, res) => {
 				connection.release()
 				throw error
 			} else if (numQueriesReturned == 2) {
-				res.sendStatus(200)
+				res.sendStatus(204)
 				connection.release()
 			}
 		}
