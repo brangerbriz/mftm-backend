@@ -10,6 +10,12 @@
 <script type="text/javascript">
 	const socket = io.connect(`https://${location.host}`)
 
+	// this message will be recieved on socket connection and then every time
+	// a new block is mined (should be right after 'received-block')
+	socket.on('mempool-size', function(count) {
+		console.log(`the mempool has ${count} transactions`)
+	})
+
 	// this will be received when a node receives an unconfirmed transaction
   	socket.on('received-tx', function(data) {
     	// console.log('received-tx:', data)

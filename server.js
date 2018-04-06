@@ -76,6 +76,12 @@ io.on('connection', function (socket) {
 			})
 		})
   	})
+
+	// update the client's mempool size
+	rpcClient.getRawMemPool((err, data) => {
+		if (err) throw err
+		socket.emit('mempool-size', data.length)
+	})
 })
 
 // allow cross-origin requests
@@ -276,7 +282,13 @@ zmqSock.on('message', function(topic, message) {
 					const block = JSON.parse(dat.toString())
 					// emit the socket.io event
 		   			io.emit('received-block', JSON.parse(dat.toString()))
-				} catch (err) { /* NOP, in case the response isn't JSON */ } 
+				} catch (err) { /* NOP, in case the response isn't JSON */ }
+
+				// update all of the client's mempool sizes
+				rpcClient.getRawMemPool((err, data) => {
+					if (err) throw err
+					io.emit('mempool-size', data.length)
+				})
 			})
 		})
 	}
