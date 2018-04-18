@@ -83,7 +83,8 @@ function _processMessageResults(results, type) {
 			tags: result.tags.split(',')
 			                 .map(tag => tag.trim())
 			                 .filter(x => x != ''),
-			valid: result.valid == 1
+			valid: result.valid == 1,
+			format: result.format == 1
 		}
 	})
 }
