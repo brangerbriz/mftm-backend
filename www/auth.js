@@ -17,3 +17,6 @@ function getAuthHeaders() {
 		return btoa(unescape(encodeURIComponent(text)))
 	}
 }
+
+// Free geo-ip lookup API. Get a free key at https://ipstack.com/
+let IPSTACK_KEY = '' 
