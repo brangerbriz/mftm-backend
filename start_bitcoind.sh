@@ -11,4 +11,4 @@ echo "[+] set open file limit to $(ulimit -n)"
 echo "[*] launching bitcoind..."
 bitcoind \
 -conf="${DIR}/bitcoin.conf" \
--datadir=/media/bbpwn2/emerge_drive/.bitcoin
+-datadir="${HOME}/.bitcoin"
