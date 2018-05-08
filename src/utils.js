@@ -66,6 +66,42 @@ function getBlockMessages(index, connection, callback) {
 	}
 }
 
+function getBlock(index, connection, callback) {
+	
+	const done = _.after(3, callback)
+	let block = null
+	
+	let query = `SELECT block_height, block_hash, block_timestamp FROM `
+	query += `coinbase_messages WHERE block_height = ${connection.escape(index)};`
+	connection.query(query, (e, r, f) => cb(e, r, f))
+	
+	query = `SELECT block_height, block_hash, block_timestamp FROM `
+	query += `address_messages WHERE block_height = ${connection.escape(index)};`
+	connection.query(query, (e, r, f) => cb(e, r, f))
+	
+	query = `SELECT block_height, block_hash, block_timestamp FROM `
+	query += `op_return_address_messages WHERE block_height = ${connection.escape(index)};`
+	connection.query(query, (e, r, f) => cb(e, r, f))
+	
+	function cb(err, results, fields) {
+		
+		if (err) {
+			callback(err, null)
+			return
+		}
+		
+		if (results.length > 0) {
+			block = {
+				height: results[0].block_height,
+				hash: results[0].block_hash,
+				time: results[0].block_timestamp
+			}
+		}
+		
+		done(null, block)
+	}
+}
+
 // transform mysql database results into a format 
 // more friendly for the front-end to receive
 function _processMessageResults(results, type) {
@@ -81,8 +117,8 @@ function _processMessageResults(results, type) {
 			block_timestamp: result.block_timestamp,
 			type: type,
 			tags: result.tags.split(',')
-			                 .map(tag => tag.trim())
-			                 .filter(x => x != ''),
+							 .map(tag => tag.trim())
+							 .filter(x => x != ''),
 			valid: result.valid == 1,
 			format: result.format == 1
 		}
@@ -96,9 +132,13 @@ function getBlocklist(params, connection, callback) {
 	const done = _.after(3, callback)
 	let blocklist = []
 
-	_getBlocklist(params, 'coinbase_messages_unique', connection, cb)
-	_getBlocklist(params, 'address_messages_unique', connection, cb)
-	_getBlocklist(params, 'op_return_address_messages_unique', connection, cb)
+	try {
+		_getBlocklist(params, 'coinbase_messages_unique', connection, cb)
+		_getBlocklist(params, 'address_messages_unique', connection, cb)
+		_getBlocklist(params, 'op_return_address_messages_unique', connection, cb)
+	} catch (err) {
+		callback(err, null)
+	}
 
 	function cb(err, res) {
 		if (err) done(err, null)
@@ -126,7 +166,7 @@ function _getBlocklist(params, table, connection, callback) {
 			query += `bookmarked = 1 AND `
 		}
 
-		if (params.valid) {
+		if (params.valid || params.search) {
 			query += `valid = 1 AND `
 		} 
 		
@@ -147,9 +187,9 @@ function _getBlocklist(params, table, connection, callback) {
 	query = query.replace(/AND $/, '')
 
 	query += 'ORDER BY block_height;'
-    let start = Date.now()
+	let start = Date.now()
 	connection.query(query, (error, results, fields) => {
-        console.log(`[mysql] (${((Date.now() - start) * 0.001).toFixed(2)} sec) ${query}`)
+		console.log(`[mysql] (${((Date.now() - start) * 0.001).toFixed(2)} sec) ${query}`)
 		if (error) {
 			callback(error, null)
 		} else {
@@ -162,16 +202,16 @@ function _getBlocklist(params, table, connection, callback) {
 function buildSQLSelectQuery(params, connection) {
 
 	const supportedTables = ['coinbase_messages', 
-	                         'address_messages', 
-	                         'file_address_messages', 
-	                         'op_return_address_messages',
-	                         'op_return_file_address_messages',
-	                         'coinbase_messages_unique', 
-	                         'address_messages_unique', 
-	                         'op_return_address_messages_unique' ]
+							 'address_messages', 
+							 'file_address_messages', 
+							 'op_return_address_messages',
+							 'op_return_file_address_messages',
+							 'coinbase_messages_unique', 
+							 'address_messages_unique', 
+							 'op_return_address_messages_unique' ]
 
 	const table = (params.table && supportedTables.indexOf(params.table) > -1) 
-	              ? params.table : 'coinbase_messages'
+				  ? params.table : 'coinbase_messages'
 	// use utf8mb4 as per:
 	// https://stackoverflow.com/questions/34637105/the-ultimate-emoji-encoding-scheme
 	let query = `SELECT *, CONVERT(UNHEX(\`data\`) USING utf8mb4) as utf8_data FROM ${connection.escapeId(table)} `
@@ -275,6 +315,7 @@ module.exports = {
 	buildSQLUpdateQuery,
 	getBlocklist,
 	getBlockMessages,
+	getBlock,
 	getDataCounts,
 	getResultsCount
 }

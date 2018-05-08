@@ -1,6 +1,4 @@
 const fs          = require('fs')
-const bitcoin     = require('bitcoin')
-const zmq         = require('zmq')
 const mysql       = require('mysql')
 const http        = require('http')
 const https       = require('https')
@@ -11,6 +9,9 @@ const bodyParser  = require('body-parser')
 const basicAuth   = require('express-basic-auth')
 const utils       = require('./src/utils')
 const _           = require('underscore')
+const path        = require('path')
+const morgan      = require('morgan')
+const rfs         = require('rotating-file-stream')
 
 // LOAD config.js
 const config = JSON.parse(fs.readFileSync('config.json', 'utf8'))
@@ -30,26 +31,51 @@ const app         = express()
 const httpsServer = https.createServer(credentials, app)
 const io          = socketio(httpsServer)
 
+// ensure log directory exists
+const logDir = path.join(__dirname, 'log')
+fs.existsSync(logDir) || fs.mkdirSync(logDir)
+
+// create a rotating write stream
+const accessLogStream = rfs('access.log', {
+	interval: '1d', // rotate daily
+	path: logDir,
+	compress: 'gzip', // compress rotated files,
+	maxSize: '1G' // only keep 1GB of total logs
+})
+
+// setup the logger to log Apache combined format to log/
+app.use(morgan('combined', {stream: accessLogStream}))
+
 io.on('connection', function (socket) {
   	console.log('[socio] socket connection established')
-  	// send the current block height on socket connection
-  	rpcClient.getBlockCount((err, count) => {
-  		if (err) console.error(err)
 
-  		// also send a list of block indexes that contain messages
-  		// and bookmarked messages
-		dbPool.getConnection((err, connection) => {
-
+	// also send a list of block indexes that contain messages
+	// and bookmarked messages
+	dbPool.getConnection((err, connection) => {
+		try {
+			if (err) {
+				console.error('[error] mysql database  error')
+				console.error(err)
+				return
+			}
+			
 			const blocklist = {
 				all: [],
 				sfw: [],
 				valid: [],
 				bookmarked: []
 			}
+			
+			// the highest block height that we have messages for. The max of:
+			// SELECT MAX(block_height) FROM coinbase_messages WHERE `valid` = 1;
+			// SELECT MAX(block_height) FROM address_messages WHERE `valid` = 1;
+			// SELECT MAX(block_height) FROM op_return_address_messages WHERE `valid` = 1;
+			// NOTE/WARNING: this will need to change if we update the database. Beware!
+			let count = 517724
 
 			// we will use this to know when to close the MYSQL pool connection
 			const done = _.after(4, () => {
-				io.emit('blockchain-data', { blocklist, height: count })
+				socket.emit('blockchain-data', { blocklist, height: count })
 				connection.release()
 			})
 
@@ -72,13 +98,10 @@ io.on('connection', function (socket) {
 				blocklist.bookmarked = list
 				done()
 			})
-		})
-  	})
-
-	// update the client's mempool size
-	rpcClient.getRawMemPool((err, data) => {
-		if (err) throw err
-		socket.emit('mempool-size', data.length)
+		} catch (err) {
+			console.error(err)
+			if (connection) connection.release()
+		}
 	})
 })
 
@@ -90,41 +113,47 @@ app.use(cors())
 app.use('/review', basicAuth(config.basicAuth))
 app.use('/api/review', basicAuth(config.basicAuth))
 
-// static server for the www/ folder
+// static server for the www/mftm-frontend and then www/ folder
+app.use(express.static('www/mftm-frontend'))
 app.use(express.static('www'))
 
-// the bitcoind rest API doesn't support CORs from localhost:8989, so we
-// essentially proxy a request to that API exposed at /api/block
 // e.g. http://localhost:8989/api/block?index=0 gives the genesis block
 app.get('/api/block', (req, res) => {
 	console.log(`[http]  GET ${req.url}`)
 	const index = parseInt(req.query.index)
+	
+	// returns an object like
+	// {
+	// 	hash: ,
+	// 	height: ,
+	// 	time: 
+	// }
+	
 	// given the block index, use the bitcoind JSON RPC api to get the
 	// corresponding block hash
-	rpcClient.getBlockHash(index, (err, hash) => {
-		if (err) {
-			res.status(200).send({error: err.message, code: err.code})
-		} 
-		else {
-			// make the "proxied" request to the bitcoind REST API using the block hash
-			const url = `http://localhost:${config.bitcoinRPCClient.port}/rest/block/${hash}.json`
-			http.get(url, apiRes => {		  		
-
-		  		res.set({'content-type': 'application/json; charset=UTF-8'})
-		  		// couldn't get streaming to work (didn't try too hard)
-		  		// so instead we will store the buffer in mem, yuck!
-		  		let dat = Buffer.from('')
-		  		
-		  		apiRes.on('data', data => {
-		    		dat += data
-		  		})
-				
-				// once we get the result from the bitcoind REST API, forward
-				// it along as the result to the original /api/block request
-				apiRes.on("end", () => {
-			   		res.end(dat)
+	dbPool.getConnection((err, connection) => {
+		try {
+			if (err) {
+				console.error('[error] mysql database connection error')
+				console.err(err)
+				res.sendStatus(500) 
+			} else {
+				utils.getBlock(index, connection, (err, block) => {
+					if (err) {
+						console.error('[error] error getting block')
+						console.error(err)
+						res.sendStatus(500)
+					} else {
+						res.set({'content-type': 'application/json; charset=UTF-8'})
+						res.send(JSON.stringify(block))
+					}
+					
+					connection.release()
 				})
-			})
+			}
+		} catch (err) {
+			console.error(err)
+			if (connection) connection.release()
 		}
 	})
 })
@@ -136,20 +165,46 @@ app.get('/api/block/messages', (req, res) => {
 	console.log(`[http]  GET ${req.url}`)
 	const index = parseInt(req.query.index)
 	dbPool.getConnection((err, connection) => {
-		utils.getBlockMessages(index, connection, (err, messages) => {
-			if (err) console.error(err)
-			res.json(messages)
-			connection.release()
-		})
+		try {
+			if (err) {
+				console.error('[error] mysql database connection error')
+				console.err(err)
+				res.sendStatus(500)
+				return
+			} 
+			
+			utils.getBlockMessages(index, connection, (err, messages) => {
+				if (err) console.error(err)
+				res.json(messages)
+				connection.release()
+			})
+		} catch (err) {
+			console.error(err)
+			if (connection) connection.release()
+		}
 	})
 })
 
 app.get('/api/filter/blocklist', (req, res) => {
 	console.log(`[http]  GET ${req.url}`)
 	dbPool.getConnection((err, connection) => {
-		utils.getBlocklist(req.query, connection, (err, list) => {
-			res.send(list)
-		})
+		try {
+		
+			if (err) {
+				console.error('[error] mysql database connection error')
+				console.err(err)
+				res.sendStatus(500)
+				return
+			} 
+			
+			utils.getBlocklist(req.query, connection, (err, list) => {
+				res.send(list)
+				connection.release()
+			})
+		} catch (err) {
+			console.error(err)
+			if (connection) connection.release()
+		}
 	})
 })
 
@@ -159,43 +214,62 @@ app.get('/api/review', (req, res) => {
 	// query the database using  the provided url params
 	console.log(`[http]  GET ${req.url}`)
 	dbPool.getConnection((err, connection) => {
-		req.query.limit = 5 // set the limit here
-		const query = utils.buildSQLSelectQuery(req.query, connection)	
-		console.log(`[mysql] ${query}`)
-		connection.query(query, (error, results, fields) => {
-			if (error) {
-				throw error
-				res.sendStaus(504)
-				connection.release()
-			} else {
-				// use the original tables to count the number of times each
-				// message appears in the blockchain and use socket.io to
-				// stream the results to the client with the 'data-count' event
-				utils.getDataCounts(
-					req.query.table.replace(/_unique$/, ''),
-					results.map(x => x.data_hash),
-					connection,
-					function eachCount(err, dataHash, count) {
-						if (err) throw err
-						io.emit('data-count', { dataHash, count })
-					}, 
-					function done(err) {
-						if (err) throw err
-						connection.release()
-						res.send(results)
-					}
-				)
+		try {		
+			if (err) {
+				console.error('[error] mysql database connection error')
+				console.err(err)
+				return
 			}
-		})
+			req.query.limit = 5 // set the limit here
+			const query = utils.buildSQLSelectQuery(req.query, connection)	
+			console.log(`[mysql] ${query}`)
+			connection.query(query, (error, results, fields) => {
+				if (error) {
+					console.error(error)
+					res.sendStaus(500)
+				} else {
+					// use the original tables to count the number of times each
+					// message appears in the blockchain and use socket.io to
+					// stream the results to the client with the 'data-count' event
+					utils.getDataCounts(
+						req.query.table.replace(/_unique$/, ''),
+						results.map(x => x.data_hash),
+						connection,
+						function eachCount(err, dataHash, count) {
+							if (err) throw err
+							io.emit('data-count', { dataHash, count })
+						}, 
+						function done(err) {
+							if (err) throw err
+							connection.release()
+							res.send(results)
+						}
+					)
+				}
+			})
+		} catch (err) {
+			console.error(err)
+			if (connection) connection.release()
+		}
 	})
 
 	// query the database to count the number of results
 	dbPool.getConnection((err, connection) => {
-		const countQuery = utils.getResultsCount(req.query, connection, (err, count) => {
-			if (err) throw err
-			io.emit('search-count', { count, clientId: req.query.clientId })
-			connection.release()
-		})
+		try {
+			if (err) {
+				console.error('[error] mysql database connection error')
+				console.err(err)
+				return
+			}
+			const countQuery = utils.getResultsCount(req.query, connection, (err, count) => {
+				if (err) throw err
+				io.emit('search-count', { count, clientId: req.query.clientId })
+				connection.release()
+			})
+		} catch (err) {
+			console.error(err)
+			if (connection) connection.release()
+		}
 	})
 })
 
@@ -205,32 +279,43 @@ app.use('/api/review', bodyParser.json())
 app.post('/api/review', (req, res) => {
 	console.log(`[https]  POST ${req.body}`)
 	dbPool.getConnection((err, connection) => {
-		// query for the unique table
-		const queryUniq = utils.buildSQLUpdateQuery(req.body, connection)
-		
-		// query for the original table
-		req.body.table = req.body.table.replace(/_unique$/, '')
-		const query = utils.buildSQLUpdateQuery(req.body, connection)
-
-		console.log(`[mysql] ${queryUniq}`)
-		console.log(`[mysql] ${query}`)
-
-		// update the original and unique database in tandem
-		connection.query(queryUniq, cb)
-		connection.query(query, cb)
-
-		let numQueriesReturned = 0
-		function cb (error, results, fields) {
-			numQueriesReturned++
-			if (error) {
-				console.error('[error] there may now be a database missmatch between the original table and the unique table')
-				res.sendStatus(504)
-				connection.release()
-				throw error
-			} else if (numQueriesReturned == 2) {
-				res.sendStatus(204)
-				connection.release()
+		try {
+			if (err) {
+				console.error('[error] mysql database connection error')
+				console.err(err)
+				return
 			}
+			// query for the unique table
+			const queryUniq = utils.buildSQLUpdateQuery(req.body, connection)
+			
+			// query for the original table
+			req.body.table = req.body.table.replace(/_unique$/, '')
+			const query = utils.buildSQLUpdateQuery(req.body, connection)
+
+			console.log(`[mysql] ${queryUniq}`)
+			console.log(`[mysql] ${query}`)
+
+			// update the original and unique database in tandem
+			connection.query(queryUniq, cb)
+			connection.query(query, cb)
+
+			let numQueriesReturned = 0
+			function cb (error, results, fields) {
+				numQueriesReturned++
+				if (error) {
+					console.error('[error] there may now be a database missmatch between the original table and the unique table')
+					console.error(error)
+					res.sendStatus(500)
+					connection.release()
+					throw error
+				} else if (numQueriesReturned == 2) {
+					res.sendStatus(204)
+					connection.release()
+				}
+			}
+		} catch (err) {
+			console.error(err)
+			if (connection) connection.release()
 		}
 	})
 })
@@ -239,71 +324,3 @@ app.post('/api/review', (req, res) => {
 httpsServer.listen(config.port, () => {
 	console.log(`[https]  server listening at https://localhost:${config.port}`)
 })
-
-//ZeroMQ bitcoind communication ------------------------------------------------
-
-const zmqSock = zmq.socket('sub')
-zmqSock.connect(config.bitcoinZMQAddress)
-zmqSock.subscribe('rawtx') // this event never fires!
-zmqSock.subscribe('hashtx')
-zmqSock.subscribe('rawblock')
-zmqSock.subscribe('hashblock')
-zmqSock.subscribe('') // receive all messages 
-
-zmqSock.on('message', function(topic, message) {
-
-	if (topic == 'rawtx') {
-		rpcClient.decodeRawTransaction(message.toString('hex'), (err, tx) => {
-			io.emit('received-tx', tx)
-		})
-	} else if (topic == 'hashblock') {
-		let blockHash = message.toString('hex')
-		console.log(`[zmq]   recieved a new block ${message.toString('hex')}`)
-		const url = `http://localhost:${config.bitcoinRPCClient.port}/rest/block/${blockHash}.json`
-		http.get(url, apiRes => {		  		
-
-	  		// couldn't get streaming to work (didn't try too hard)
-	  		// so instead we will store the buffer in mem, yuck!
-	  		let dat = Buffer.from('')
-	  		
-	  		apiRes.on('data', data => {
-	    		dat += data
-	  		})
-			
-			// once we get the result from the bitcoind REST API, forward
-			// it along as the result to the original /api/block request
-			apiRes.on("end", () => {
-				try {
-					const block = JSON.parse(dat.toString())
-					// emit the socket.io event
-		   			io.emit('received-block', JSON.parse(dat.toString()))
-				} catch (err) { /* NOP, in case the response isn't JSON */ }
-
-				// update all of the client's mempool sizes
-				rpcClient.getRawMemPool((err, data) => {
-					if (err) throw err
-					io.emit('mempool-size', data.length)
-				})
-			})
-		})
-	}
-})
-
-// JSONRPC bitcoind communication ----------------------------------------------
-
-// https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_calls_list
-const rpcClient = new bitcoin.Client(config.bitcoinRPCClient)
-
-// broadcast the current list of bitcoind peers to all connected socket.io
-// clients at an interval set by config.peerInfoRefreshInterval
-setInterval(() => {
-	rpcClient.getPeerInfo(function(err, data) {
-		if (err) {
-			console.log('[!] error in rpcClient.getPeerInfo(...)')
-			console.error(err)
-		}
-		else {
-			io.emit('peer-info', data)
-		}
-	})
-}, config.peerInfoRefreshInterval)
