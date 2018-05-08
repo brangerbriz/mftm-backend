@@ -32,10 +32,8 @@ const io          = socketio(httpsServer)
 
 io.on('connection', function (socket) {
   	console.log('[socio] socket connection established')
-  	
   	// send the current block height on socket connection
   	rpcClient.getBlockCount((err, count) => {
-
   		if (err) console.error(err)
 
   		// also send a list of block indexes that contain messages
@@ -139,10 +137,7 @@ app.get('/api/block/messages', (req, res) => {
 	const index = parseInt(req.query.index)
 	dbPool.getConnection((err, connection) => {
 		utils.getBlockMessages(index, connection, (err, messages) => {
-			console.log('err')
-			console.log(err)
-			console.log('message')
-			console.log(messages)
+			if (err) console.error(err)
 			res.json(messages)
 			connection.release()
 		})
@@ -152,8 +147,6 @@ app.get('/api/block/messages', (req, res) => {
 app.get('/api/filter/blocklist', (req, res) => {
 	console.log(`[http]  GET ${req.url}`)
 	dbPool.getConnection((err, connection) => {
-		console.log('OUT HERE')
-		console.log(req.query)
 		utils.getBlocklist(req.query, connection, (err, list) => {
 			res.send(list)
 		})

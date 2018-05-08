@@ -112,7 +112,7 @@ function getBlocklist(params, connection, callback) {
 // internal method to extract blocklist from a single table
 function _getBlocklist(params, table, connection, callback) {
 	
-	let query = `SELECT DISTINCT block_height FROM ${table} `
+	let query = `SELECT DISTINCT SQL_CACHE block_height FROM ${table} `
 	
 	if (params.sfw || params.bookmarked || params.valid || params.search || params.tags) {
 		
@@ -147,8 +147,9 @@ function _getBlocklist(params, table, connection, callback) {
 	query = query.replace(/AND $/, '')
 
 	query += 'ORDER BY block_height;'
-	console.log(query)
+    let start = Date.now()
 	connection.query(query, (error, results, fields) => {
+        console.log(`[mysql] (${((Date.now() - start) * 0.001).toFixed(2)} sec) ${query}`)
 		if (error) {
 			callback(error, null)
 		} else {
