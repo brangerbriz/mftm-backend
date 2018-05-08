@@ -6,7 +6,6 @@
 <body>
 <script type="text/javascript" src="/socket.io/socket.io.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/qs/6.5.1/qs.js"></script>
-<script type="text/javascript" src="../auth.js"></script>
 <script type="text/javascript">
 	const socket = io.connect(`https://${location.host}`)
 
@@ -53,7 +52,7 @@
   	})
 
   	// fetch a block using a block height index
-  	fetch(`https://${location.host}/api/block?index=500000`, { headers: getAuthHeaders() })
+  	fetch(`https://${location.host}/api/block?index=500000`)
   	.then(res => res.json())
   	.then(data => {
 		console.log(`This is how you get a block using the block index:`)
@@ -63,7 +62,7 @@
   	})
 
   	// fetch all messages in a block using the block height index
-  	fetch(`https://${location.host}/api/block/messages?index=0`, { headers: getAuthHeaders() })
+  	fetch(`https://${location.host}/api/block/messages?index=0`)
   	.then(res => res.json())
   	.then(data => {
 		console.log(`This is how you get the messages in a block using the block index:`)
@@ -73,7 +72,7 @@
   	})
 
     // fetch all messages in a block using the block height index
-    fetch(`https://${location.host}/api/block/messages?index=0`, { headers: getAuthHeaders() })
+    fetch(`https://${location.host}/api/block/messages?index=0`)
     .then(res => res.json())
     .then(data => {
     console.log(`This is how you get the messages in a block using the block index:`)
@@ -87,7 +86,7 @@
       tags: ['test', 'love']
     }
     // fetch all messages in a block using the block height index
-    fetch(`https://${location.host}/api/filter/blocklist?${Qs.stringify(filter)}`, { headers: getAuthHeaders() })
+    fetch(`https://${location.host}/api/filter/blocklist?${Qs.stringify(filter)}`)
     .then(res => res.json())
     .then(data => {
     console.log(`This is how you get a filtered blocklist`)

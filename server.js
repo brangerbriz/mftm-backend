@@ -87,8 +87,10 @@ io.on('connection', function (socket) {
 // allow cross-origin requests
 app.use(cors())
 
-// use basic authentication. Reply with a 401 to all non-authed requests.
-app.use(basicAuth(config.basicAuth))
+// use basic authentication for review and review api.
+// Reply with a 401 to all non-authed requests.
+app.use('/review', basicAuth(config.basicAuth))
+app.use('/api/review', basicAuth(config.basicAuth))
 
 // static server for the www/ folder
 app.use(express.static('www'))
