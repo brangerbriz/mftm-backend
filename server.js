@@ -139,16 +139,18 @@ app.get('/api/block', (req, res) => {
 				res.sendStatus(500) 
 			} else {
 				utils.getBlock(index, connection, (err, block) => {
-					if (err) {
-						console.error('[error] error getting block')
+					try {
+						if (err) {
+							console.error('[error] error getting block')
+							console.error(err)
+							res.sendStatus(500)
+						} else {
+							res.json(block)
+						}
+						connection.release()
+					} catch (err) {
 						console.error(err)
-						res.sendStatus(500)
-					} else {
-						res.set({'content-type': 'application/json; charset=UTF-8'})
-						res.send(JSON.stringify(block))
 					}
-					
-					connection.release()
 				})
 			}
 		} catch (err) {
@@ -175,7 +177,11 @@ app.get('/api/block/messages', (req, res) => {
 			
 			utils.getBlockMessages(index, connection, (err, messages) => {
 				if (err) console.error(err)
-				res.json(messages)
+				try {
+					res.json(messages)
+				} catch (err) {
+					console.error(err)
+				}
 				connection.release()
 			})
 		} catch (err) {
@@ -198,7 +204,7 @@ app.get('/api/filter/blocklist', (req, res) => {
 			} 
 			
 			utils.getBlocklist(req.query, connection, (err, list) => {
-				res.send(list)
+				try { res.send(list) } catch (err) { console.error(err) }
 				connection.release()
 			})
 		} catch (err) {

@@ -70,6 +70,7 @@ function getBlock(index, connection, callback) {
 	
 	const done = _.after(3, callback)
 	let block = null
+	let error = null
 	
 	let query = `SELECT block_height, block_hash, block_timestamp FROM `
 	query += `coinbase_messages WHERE block_height = ${connection.escape(index)};`
@@ -85,20 +86,21 @@ function getBlock(index, connection, callback) {
 	
 	function cb(err, results, fields) {
 		
-		if (err) {
-			callback(err, null)
-			return
-		}
-		
-		if (results.length > 0) {
-			block = {
-				height: results[0].block_height,
-				hash: results[0].block_hash,
-				time: results[0].block_timestamp
+		if (!error) {
+			
+			if (err) {
+				error = err
+			} else if (results.length > 0) {
+				block = {
+					height: results[0].block_height,
+					hash: results[0].block_hash,
+					time: results[0].block_timestamp
+				}
 			}
 		}
 		
-		done(null, block)
+		if (error) done(error, null)
+		else done(null, block)
 	}
 }
 
