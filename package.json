@@ -19,5 +19,8 @@
     "socket.io": "^2.0.4",
     "underscore": "^1.8.3",
     "zmq": "^2.15.3"
+  },
+  "devDependencies": {
+    "forever": "^0.15.3"
   }
 }
